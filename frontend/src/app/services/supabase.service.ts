@@ -42,7 +42,11 @@ export class SupabaseService {
       options: {
         redirectTo,
         scopes:
-          'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email'
+          'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent'
+        }
       }
     });
   }

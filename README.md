@@ -50,10 +50,17 @@ Adjust the Supabase client inside `frontend/src/app/services/supabase.service.ts
 Connect to your Supabase Postgres SQL UI or CLI and execute the layout defined dynamically in `supabase/migrations/00000_schema.sql` to generate the correct schema and audit tables.
 
 **4. Spin up the Stack via Docker Compose**
-Execute the following to orchestrate the backend, frontend, and Redis instances simultaneously:
+Execute the following to orchestrate the backend, frontend, and Redis instances simultaneously in containers:
 ```bash
 docker-compose up --build -d
 ```
+
+**Alternatively: Run Natively (Without Docker)**
+If you prefer to run the Node.js and Angular servers natively on your machine (useful for active development):
+```bash
+./start-local.sh
+```
+*(This script will spin up Redis in the background but launch the Express and Angular servers natively using your local Node binaries).*
 
 **Access Points**:
 - **Application Frontend**: `http://localhost:4200`

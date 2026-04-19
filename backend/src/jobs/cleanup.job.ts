@@ -1,6 +1,9 @@
 import { Job } from 'bull';
 import { getGmailClient } from '../config/google';
 import { supabase } from '../config/supabase';
+import { createLogger } from '../lib/logger';
+
+const logger = createLogger('jobs.cleanup');
 
 export const processCleanup = async (job: Job) => {
   const { userId, action, tokens } = job.data;
@@ -46,8 +49,14 @@ export const processCleanup = async (job: Job) => {
          });
        }
     }
-  } catch (error) {
-    console.error('Job failed:', error);
+  } catch (error: unknown) {
+    logger.error('Cleanup job failed', {
+      jobId: job.id,
+      userId,
+      action,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 };

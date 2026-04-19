@@ -54,7 +54,7 @@ import { SupabaseService } from '../../services/supabase.service';
           </div>
           <button
             type="button"
-            (click)="loadStatus()"
+            (click)="refreshMailbox()"
             class="inline-flex items-center justify-center px-4 py-2 rounded text-sm font-medium bg-[#1a73e8] text-white hover:bg-[#1557b0] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:ring-offset-2 shadow-sm transition-colors"
           >
             Scan mailbox
@@ -170,8 +170,18 @@ export class DashboardComponent implements OnInit {
     this.supabase.user.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((u) => {
       this.email = u?.email ?? u?.user_metadata?.['email'] ?? null;
     });
-    this.loadStatus();
-    this.loadSubs();
+    void this.bootstrapDashboard();
+  }
+
+  /** Persists Google OAuth tokens from Supabase session into DB, then loads data. */
+  private async bootstrapDashboard() {
+    try {
+      await this.api.syncGoogleTokensFromSession();
+    } catch (e: unknown) {
+      console.warn('Google token sync failed', e);
+    }
+    await this.loadStatus();
+    await this.loadSubs();
   }
 
   displaySender(raw: string): string {
@@ -183,17 +193,25 @@ export class DashboardComponent implements OnInit {
     this.statusError = null;
     try {
       this.stats = await this.api.getMailboxStatus();
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const http = e as { status?: number; error?: { error?: string }; message?: string };
       const msg =
-        e?.error?.error ??
-        e?.message ??
-        (typeof e?.status === 'number' ? `Request failed (${e.status})` : 'Could not load mailbox status.');
-      if (e?.status === 401 || String(msg).toLowerCase().includes('token')) {
+        http?.error?.error ??
+        http?.error ??
+        http?.message ??
+        (typeof http?.status === 'number' ? `Request failed (${http.status})` : 'Could not load mailbox status.');
+      const text = String(msg);
+      if (http?.status === 400 && text.toLowerCase().includes('google')) {
         this.statusError =
-          'Could not reach the mailbox API (401 or missing tokens). Start the backend and complete Google linking if required.';
+          'Gmail tokens are not stored yet. Sign out, sign in with Google again, approve Gmail access, then refresh this page.';
         return;
       }
-      this.statusError = String(msg);
+      if (http?.status === 401 || text.toLowerCase().includes('token')) {
+        this.statusError =
+          'API rejected the session. Ensure the backend is running and you are signed in with Google.';
+        return;
+      }
+      this.statusError = text;
     }
   }
 
@@ -204,6 +222,16 @@ export class DashboardComponent implements OnInit {
     } catch {
       this.subs = [];
     }
+  }
+
+  async refreshMailbox() {
+    try {
+      await this.api.syncGoogleTokensFromSession();
+    } catch {
+      /* sync is best-effort */
+    }
+    await this.loadStatus();
+    await this.loadSubs();
   }
 
   async triggerAction(action: string) {

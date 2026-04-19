@@ -17,8 +17,33 @@ export class ApiService {
   async getHeaders() {
     const token = await this.supabase.sessionToken;
     return new HttpHeaders({
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`
     });
+  }
+
+  /**
+   * Saves Google provider tokens from the Supabase session into `user_tokens` (server-side).
+   * Required before mailbox/subscriptions APIs can call Gmail.
+   */
+  async syncGoogleTokensFromSession(): Promise<void> {
+    const session = await this.supabase.getSession();
+    if (!session?.provider_token) {
+      return;
+    }
+    const headers = await this.getHeaders();
+    const expiresAt =
+      session.expires_at != null ? new Date(session.expires_at * 1000).toISOString() : null;
+    await firstValueFrom(
+      this.http.post(
+        `${this.baseUrl}/auth/sync-google-tokens`,
+        {
+          provider_token: session.provider_token,
+          provider_refresh_token: session.provider_refresh_token ?? null,
+          expires_at: expiresAt
+        },
+        { headers }
+      )
+    );
   }
 
   async getMailboxStatus() {

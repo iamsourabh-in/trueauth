@@ -3,9 +3,36 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { supabase } from '../config/supabase';
 import { extractCalendarDetails } from '../services/ai.service';
 import { getCalendarClient } from '../config/google';
+import { createLogger, requestLogMeta } from '../lib/logger';
+
+const logger = createLogger('routes.calendar');
 
 export const calendarRouter = Router();
 
+/**
+ * @swagger
+ * /calendar/suggest:
+ *   post:
+ *     summary: Parse email body for Calendar Suggestion
+ *     description: Leverages LLM to extract potential meeting names and time spans from raw email body strings.
+ *     tags: [Calendar]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               emailContent:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Suggestion extracted
+ *       400:
+ *         description: Content or token missing 
+ */
 calendarRouter.post('/suggest', requireAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.id;
@@ -31,7 +58,36 @@ calendarRouter.post('/suggest', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-// Assuming a separate endpoint where the user confirms creation
+/**
+ * @swagger
+ * /calendar/create:
+ *   post:
+ *     summary: Generate Event inside Google Calendar
+ *     description: Formats an event object and inserts it directly into the user's primary calendar stream.
+ *     tags: [Calendar]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               start:
+ *                 type: string
+ *                 format: date-time
+ *               end:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       200:
+ *         description: Created Google Calendar Event HTML link
+ *       500:
+ *         description: API insertion issues
+ */
 calendarRouter.post('/create', requireAuth, async (req: AuthRequest, res) => {
     try {
         const userId = req.user?.id;
@@ -52,8 +108,17 @@ calendarRouter.post('/create', requireAuth, async (req: AuthRequest, res) => {
         });
 
         res.json({ eventUrl: createRes.data.htmlLink });
-    } catch (error: any) {
-        console.error('Calendar create error:', error);
-        res.status(500).json({ error: 'Failed to create calendar event', details: error.message });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error('Calendar create error', {
+          ...requestLogMeta(req),
+          message,
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        res.status(500).json({
+          error: 'Failed to create calendar event',
+          details: message,
+          requestId: req.requestId
+        });
     }
 });

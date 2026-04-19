@@ -3,12 +3,41 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { supabase } from '../config/supabase';
 import { cleanupQueue } from '../config/bull';
 import { processCleanup } from '../jobs/cleanup.job';
+import { createLogger, requestLogMeta } from '../lib/logger';
 
-// Initialize queue processor
 cleanupQueue.process(processCleanup);
+
+const logger = createLogger('routes.cleanup');
 
 export const cleanupRouter = Router();
 
+/**
+ * @swagger
+ * /cleanup/trigger:
+ *   post:
+ *     summary: Trigger a background cleanup job
+ *     description: Queues an automated cleanup job (e.g., archiving promotions or deleting OTPs).
+ *     tags: [Cleanup]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [archive-promotions, delete-otps, clear-junk]
+ *     responses:
+ *       200:
+ *         description: Job successfully pushed to the Bull Queue.
+ *       400:
+ *         description: Invalid action type or missing tokens
+ *       401:
+ *         description: Unauthorized
+ */
 cleanupRouter.post('/trigger', requireAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.id;
@@ -34,8 +63,13 @@ cleanupRouter.post('/trigger', requireAuth, async (req: AuthRequest, res) => {
     });
 
     res.json({ status: 'queued', action });
-  } catch (error: any) {
-    console.error('Cleanup error:', error);
-    res.status(500).json({ error: 'Failed to queue cleanup', details: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error('Cleanup queue error', { ...requestLogMeta(req), message, stack: error instanceof Error ? error.stack : undefined });
+    res.status(500).json({
+      error: 'Failed to queue cleanup',
+      details: message,
+      requestId: req.requestId
+    });
   }
 });

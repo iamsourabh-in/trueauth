@@ -2,10 +2,29 @@ import { Router } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getGmailClient } from '../config/google';
 import { supabase } from '../config/supabase';
-import { evaluateSubscription } from '../services/ai.service';
+import { createLogger, requestLogMeta } from '../lib/logger';
+
+const logger = createLogger('routes.subscriptions');
 
 export const subscriptionsRouter = Router();
 
+/**
+ * @swagger
+ * /subscriptions/:
+ *   get:
+ *     summary: Get all active subscriptions
+ *     description: Parses recent emails to discover and list active marketing subscriptions containing an unsubscribe link.
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A deduplicated list of active subscriptions.
+ *       400:
+ *         description: Google tokens missing
+ *       401:
+ *         description: Unauthorized
+ */
 subscriptionsRouter.get('/', requireAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.id;
@@ -52,8 +71,12 @@ subscriptionsRouter.get('/', requireAuth, async (req: AuthRequest, res) => {
                 });
             }
             // For MVP, we skip LLM body evaluation on all emails to save time/cost unless requested explicitly
-        } catch (e) {
-            console.warn('Failed to fetch msg', messages[i].id);
+        } catch (e: unknown) {
+            logger.warn('Failed to fetch message for subscription scan', {
+              ...requestLogMeta(req),
+              messageId: messages[i].id,
+              detail: e instanceof Error ? e.message : String(e)
+            });
         }
     }
 
@@ -62,8 +85,13 @@ subscriptionsRouter.get('/', requireAuth, async (req: AuthRequest, res) => {
 
     res.json({ subscriptions: uniqueSubs });
 
-  } catch (error: any) {
-    console.error('Subscriptions error:', error);
-    res.status(500).json({ error: 'Failed to fetch subscriptions', details: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error('Subscriptions error', { ...requestLogMeta(req), message, stack: error instanceof Error ? error.stack : undefined });
+    res.status(500).json({
+      error: 'Failed to fetch subscriptions',
+      details: message,
+      requestId: req.requestId
+    });
   }
 });

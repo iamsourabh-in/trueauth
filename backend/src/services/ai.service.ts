@@ -1,10 +1,14 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
+import { createLogger } from '../lib/logger';
+
 dotenv.config();
+
+const logger = createLogger('services.ai');
 
 const apiKey = process.env.LLM_API_KEY as string;
 if (!apiKey) {
-    console.warn("LLM_API_KEY is not defined.");
+  logger.warn('LLM_API_KEY is not defined; AI features will fail until it is set.');
 }
 
 const genAI = new GoogleGenerativeAI(apiKey || 'mock-key');

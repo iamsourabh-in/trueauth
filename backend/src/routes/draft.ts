@@ -3,9 +3,38 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { supabase } from '../config/supabase';
 import { getGmailClient } from '../config/google';
 import { generateDraftReply } from '../services/ai.service';
+import { createLogger, requestLogMeta } from '../lib/logger';
+
+const logger = createLogger('routes.draft');
 
 export const draftRouter = Router();
 
+/**
+ * @swagger
+ * /draft/reply:
+ *   post:
+ *     summary: Generate an AI draft reply
+ *     description: Analyzes the provided thread and 10 of the users sent emails to generate an organic, tone-matched draft via Gemini API directly into the Gmail Drafts box.
+ *     tags: [AI Drafting]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               threadId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Success, Draft ID created in Gmail
+ *       400:
+ *         description: Missing threadId or Tokens
+ *       500:
+ *         description: Internal generation/fetching errors
+ */
 draftRouter.post('/reply', requireAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.id;
@@ -59,8 +88,13 @@ draftRouter.post('/reply', requireAuth, async (req: AuthRequest, res) => {
     });
 
     res.json({ status: 'Draft created', draftId: draftRes.data.id });
-  } catch (error: any) {
-    console.error('Draft error:', error);
-    res.status(500).json({ error: 'Failed to create draft', details: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error('Draft error', { ...requestLogMeta(req), message, stack: error instanceof Error ? error.stack : undefined });
+    res.status(500).json({
+      error: 'Failed to create draft',
+      details: message,
+      requestId: req.requestId
+    });
   }
 });

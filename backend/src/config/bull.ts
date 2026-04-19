@@ -1,10 +1,13 @@
 import Queue from 'bull';
 import dotenv from 'dotenv';
+import { createLogger } from '../lib/logger';
+
 dotenv.config();
+
+const logger = createLogger('config.bull');
 
 export const cleanupQueue = new Queue('cleanup', process.env.REDIS_URL || 'redis://localhost:6379');
 
-// Define job processing logic here if needed, or import processors.
-cleanupQueue.on('error', (err) => {
-  console.error('Bull queue error:', err);
+cleanupQueue.on('error', (err: Error) => {
+  logger.error('Bull queue connection error', { message: err.message, stack: err.stack });
 });
