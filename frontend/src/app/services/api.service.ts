@@ -132,4 +132,17 @@ export class ApiService {
       throw error;
     }
   }
+
+  async syncMailbox() {
+    console.info('[API] POST /mailbox/sync');
+    const headers = await this.getHeaders();
+    try {
+      const res = await firstValueFrom(this.http.post<any>(`${this.baseUrl}/mailbox/sync`, {}, { headers }));
+      console.info('[API] POST /mailbox/sync - Success', res);
+      return res;
+    } catch (error) {
+      console.error('[API] POST /mailbox/sync - Failed', error);
+      throw error;
+    }
+  }
 }

@@ -152,7 +152,10 @@ export class InboxComponent implements OnInit, AfterViewInit {
   private donutChart?: Chart;
   private barChart?: Chart;
 
-  async ngOnInit()    { await this.loadData(); }
+  async ngOnInit() {
+    await this.api.syncMailbox(); // Ingest recent emails for analysis
+    await this.loadData();
+  }
   ngAfterViewInit()   { this.buildCharts(); }
 
   async refresh() {

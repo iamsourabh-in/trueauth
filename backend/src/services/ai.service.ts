@@ -8,13 +8,16 @@ const logger = createLogger('services.ai');
 
 const apiKey = process.env.LLM_API_KEY as string;
 if (!apiKey) {
-  logger.warn('LLM_API_KEY is not defined; AI features will fail until it is set.');
+    logger.warn('LLM_API_KEY is not defined; AI features will fail until it is set.');
 }
 
 const genAI = new GoogleGenerativeAI(apiKey || 'mock-key');
 
+// Use the verified model string 'gemini-flash-latest' for all tasks
+const MODEL_NAME = "gemini-flash-latest";
+
 export const generateDraftReply = async (contextEmails: string[], currentThread: string): Promise<string> => {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
     
     const prompt = `
     You are an AI assistant helping draft a reply to an email thread.
@@ -35,7 +38,7 @@ export const generateDraftReply = async (contextEmails: string[], currentThread:
 };
 
 export const extractCalendarDetails = async (emailContent: string): Promise<any> => {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
     
     const prompt = `
     Extract event details from the following email. If a meeting is mentioned, extract the Title, Start Time, and End Time (assuming ISO format strings). Let's assume today is ${new Date().toISOString()}.
@@ -58,7 +61,7 @@ export const extractCalendarDetails = async (emailContent: string): Promise<any>
 };
 
 export const evaluateSubscription = async (emailContent: string): Promise<boolean> => {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
     
     const prompt = `
     Determine if the following email is a marketing newsletter or subscription.
