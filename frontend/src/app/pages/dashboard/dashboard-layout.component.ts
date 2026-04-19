@@ -23,9 +23,9 @@ interface NavItem {
       <aside class="sidebar" [class.collapsed]="collapsed">
         <!-- Logo -->
         <div class="sidebar-header">
-          <div class="sidebar-logo" *ngIf="!collapsed">
-            <div class="logo-dot"></div>
-            <span>TrueAuth</span>
+          <div class="sidebar-logo" (click)="router.navigate(['/dashboard/summary'])">
+            <img src="assets/logo.png" alt="TrueAuth Logo" class="main-logo">
+            <span *ngIf="!collapsed">TrueAuth</span>
           </div>
           <button class="collapse-btn" (click)="collapsed = !collapsed" [title]="collapsed ? 'Expand' : 'Collapse'">
             <lucide-icon [name]="collapsed ? 'chevron-right' : 'chevron-left'" [size]="16"></lucide-icon>
@@ -115,16 +115,12 @@ interface NavItem {
       padding: 0 0.75rem; height: 58px; border-bottom: 1px solid var(--border); flex-shrink: 0;
     }
     .sidebar-logo {
-      display: flex; align-items: center; gap: 0.45rem;
-      font-size: 1.05rem; font-weight: 800; letter-spacing: -0.04em;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-      white-space: nowrap;
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 1.1rem; font-weight: 800; letter-spacing: -0.04em;
+      color: var(--text-primary);
+      white-space: nowrap; cursor: pointer;
     }
-    .logo-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent2)); flex-shrink: 0;
-    }
+    .main-logo { height: 28px; width: auto; object-fit: contain; }
     .collapse-btn {
       background: none; border: 1px solid var(--border); border-radius: 0.375rem;
       cursor: pointer; padding: 0.28rem; color: var(--text-secondary);

@@ -16,7 +16,10 @@ import { LucideAngularModule } from 'lucide-angular';
 
     <!-- Navbar -->
     <nav class="login-nav">
-      <span class="nav-wordmark" (click)="router.navigate(['/'])">TrueAuth</span>
+      <div class="nav-brand" (click)="router.navigate(['/'])">
+        <img src="assets/logo.png" alt="TrueAuth Logo" class="brand-logo">
+        <span class="nav-wordmark">TrueAuth</span>
+      </div>
       <div style="display:flex;align-items:center;gap:.5rem;">
         <button class="nav-ghost" (click)="router.navigate(['/about'])">About</button>
         <button class="nav-ghost" (click)="router.navigate(['/privacy'])">Privacy</button>
@@ -53,8 +56,8 @@ import { LucideAngularModule } from 'lucide-angular';
           <div class="glass-card login-card">
             <!-- Logo -->
             <div class="logo-wrap anim-logo">
-              <div class="logo-icon" [class.pulse]="!busy">
-                 <lucide-icon name="mail" [size]="28" color="white"></lucide-icon>
+              <div class="logo-circle" [class.pulse]="!busy">
+                 <img src="assets/logo.png" alt="TrueAuth Logo" class="card-logo">
               </div>
             </div>
 
@@ -116,11 +119,12 @@ import { LucideAngularModule } from 'lucide-angular';
       background: var(--nav-bg); backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
     }
+    .nav-brand { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; }
+    .brand-logo { height: 24px; width: auto; object-fit: contain; }
     .nav-wordmark {
       font-size: 1.2rem; font-weight: 800; letter-spacing: -0.04em;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-      cursor: pointer;
     }
     .nav-ghost {
       background: none; border: none; cursor: pointer; color: var(--text-secondary);
@@ -178,13 +182,14 @@ import { LucideAngularModule } from 'lucide-angular';
     }
 
     .logo-wrap { margin-bottom: 1.5rem; }
-    .logo-icon {
-      width: 60px; height: 60px; border-radius: 1rem;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+    .logo-circle {
+      width: 64px; height: 64px; border-radius: 1.25rem;
+      background: white; border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 8px 24px var(--shadow);
     }
-    .logo-icon.pulse { animation: pulse-ring 2.5s ease-in-out infinite; }
+    .logo-circle.pulse { animation: pulse-ring 2.5s ease-in-out infinite; }
+    .card-logo { width: 40px; height: auto; }
 
     .card-title {
       font-size: 1.5rem; font-weight: 800;
