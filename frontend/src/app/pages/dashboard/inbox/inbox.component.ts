@@ -14,11 +14,21 @@ Chart.register(...registerables);
   imports: [CommonModule, LucideAngularModule],
   template: `
     <div class="inbox-page">
-      <!-- Stat cards -->
-      <div class="stats-row">
+      <!-- Top Primary Stats -->
+      <div class="stats-row grid-4">
         <div class="stat-card">
           <div class="stat-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
-            <lucide-icon name="inbox" [size]="20" color="white"></lucide-icon>
+            <lucide-icon name="mail" [size]="20" color="white"></lucide-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ loading ? '—' : stats.totalEmailsInGmail }}</span>
+            <span class="stat-label">Total in Gmail</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#3b82f6,#2dd4bf)">
+            <lucide-icon name="database" [size]="20" color="white"></lucide-icon>
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ loading ? '—' : stats.totalEmailsScanned }}</span>
@@ -37,41 +47,55 @@ Chart.register(...registerables);
         </div>
 
         <div class="stat-card">
-          <div class="stat-icon" style="background:linear-gradient(135deg,#10b981,#3b82f6)">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#8b5cf6,#d946ef)">
             <lucide-icon name="sparkles" [size]="20" color="white"></lucide-icon>
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ loading ? '—' : stats.important }}</span>
-            <span class="stat-label">Priority Mail</span>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-icon" style="background:linear-gradient(135deg,#ef4444,#ec4899)">
-            <lucide-icon name="shield-alert" [size]="20" color="white"></lucide-icon>
-          </div>
-          <div class="stat-info">
-            <span class="stat-value">{{ loading ? '—' : stats.spam }}</span>
-            <span class="stat-label">Spam detected</span>
+            <span class="stat-label">Priority Items</span>
           </div>
         </div>
       </div>
 
-      <!-- Charts -->
+      <!-- Secondary Stats (Drafts & Starred) -->
+      <div class="stats-row grid-2-wide">
+        <div class="stat-card mini">
+          <div class="stat-icon small" style="background:var(--surface2)">
+            <lucide-icon name="pen-tool" [size]="16" color="var(--accent)"></lucide-icon>
+          </div>
+          <div class="stat-info horizontal">
+            <span class="stat-label">Total Drafts</span>
+            <span class="stat-value mini">{{ loading ? '—' : stats.draftsCount }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card mini">
+          <div class="stat-icon small" style="background:var(--surface2)">
+            <lucide-icon name="star" [size]="16" color="#f59e0b"></lucide-icon>
+          </div>
+          <div class="stat-info horizontal">
+            <span class="stat-label">Total Starred</span>
+            <span class="stat-value mini">{{ loading ? '—' : stats.starredCount }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts & Activity -->
       <div class="charts-row">
         <div class="chart-card">
           <div class="chart-header">
-            <h3>Mailbox Composition</h3>
-            <span class="chart-sub">Overview of your inbox items</span>
+            <h3>Composition</h3>
+            <span class="chart-sub">Overview of categories</span>
           </div>
           <div class="chart-wrap">
             <canvas #donutChart></canvas>
           </div>
         </div>
+
         <div class="chart-card wide override-overflow">
           <div class="chart-header">
             <h3>Recent Activity</h3>
-            <span class="chart-sub">Latest ingested emails</span>
+            <span class="chart-sub">Latest synced emails</span>
           </div>
           
           <div class="recent-list">
@@ -109,7 +133,7 @@ Chart.register(...registerables);
             </div>
 
             <div class="empty-recent" *ngIf="!loading && !recentEmails.length">
-               <p>No recent activity found. Run a sync to ingest data.</p>
+               <p>No recent synchronization data.</p>
             </div>
           </div>
         </div>
@@ -125,36 +149,49 @@ Chart.register(...registerables);
     </div>
   `,
   styles: [`
-    .inbox-page { display: flex; flex-direction: column; gap: 1.25rem; }
-    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
-    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; position: relative; transition: all 0.2s; }
+    .inbox-page { display: flex; flex-direction: column; gap: 1rem; }
+    
+    .stats-row { display: grid; gap: 1rem; }
+    .grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .grid-2-wide { grid-template-columns: 1fr 1fr; }
+    
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; transition: all 0.2s; }
     .stat-card:hover { box-shadow: var(--card-shadow); transform: translateY(-2px); border-color: var(--accent); }
+    .stat-card.mini { padding: 0.75rem 1rem; }
+    
     .stat-icon { width: 44px; height: 44px; border-radius: 0.85rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .stat-value { display: block; font-size: 1.8rem; font-weight: 800; color: var(--text-primary); line-height: 1; margin-bottom: 0.2rem; }
-    .stat-label { display: block; font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; }
+    .stat-icon.small { width: 32px; height: 32px; border-radius: 0.5rem; }
+    
+    .stat-info { display: flex; flex-direction: column; }
+    .stat-info.horizontal { flex-direction: row; align-items: center; justify-content: space-between; flex: 1; }
+    
+    .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); line-height: 1; margin-bottom: 0.2rem; }
+    .stat-value.mini { font-size: 1.1rem; margin-bottom: 0; color: var(--text-primary); }
+    .stat-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
 
-    .charts-row { display: grid; grid-template-columns: 320px 1fr; gap: 1.25rem; }
+    .charts-row { display: grid; grid-template-columns: 320px 1fr; gap: 1rem; }
     @media (max-width: 1000px) { .charts-row { grid-template-columns: 1fr; } }
+    
     .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; position: relative; }
     .override-overflow { overflow: visible !important; }
-    .chart-header { margin-bottom: 1.5rem; }
-    .chart-header h3 { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.2rem; }
-    .chart-sub { font-size: 0.8rem; color: var(--text-secondary); }
+    .chart-header { margin-bottom: 1rem; }
+    .chart-header h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+    .chart-sub { font-size: 0.75rem; color: var(--text-secondary); }
     .chart-wrap { position: relative; min-height: 250px; }
 
-    .recent-list { display: flex; flex-direction: column; gap: 0.5rem; overflow: visible; }
-    .email-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.85rem; border-radius: 0.85rem; border: 1px solid transparent; transition: all 0.2s; position: relative; animation: slideIn 0.3s ease both; overflow: visible; }
+    .recent-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .email-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.75rem; border-radius: 0.85rem; border: 1px solid transparent; transition: all 0.2s; position: relative; animation: slideIn 0.3s ease both; }
     .email-row:hover { background: var(--surface2); border-color: var(--border); }
-    .email-row.menu-open { background: var(--surface2); border-color: var(--accent-subtle); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .email-row.menu-open { background: var(--surface2); border-color: var(--accent-subtle); z-index: 100 !important; }
     @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
     .email-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-subtle); color: var(--accent); font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .email-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .email-body { flex: 1; min-width: 0; }
     .email-sender { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .email-subj { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .email-cat-tag { align-self: flex-start; padding: 0.1rem 0.4rem; background: var(--surface2); border-radius: 4px; font-size: 0.65rem; font-weight: 700; color: var(--accent); text-transform: uppercase; border: 1px solid var(--border); }
+    .email-cat-tag { align-self: flex-start; padding: 1px 4px; background: var(--surface2); border-radius: 4px; font-size: 0.6rem; font-weight: 700; color: var(--accent); text-transform: uppercase; border: 1px solid var(--border); margin-top: 2px; }
 
-    .email-opts { opacity: 1; transition: opacity 0.2s; position: relative; }
+    .email-opts { position: relative; }
     .menu-trigger { border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; padding: 0.25rem; border-radius: 0.4rem; display: flex; align-items: center; transition: all 0.2s; }
     .menu-trigger:hover { color: var(--accent); border-color: var(--accent); }
     .email-row.menu-open .menu-trigger { background: var(--accent); color: white; border-color: var(--accent); }
@@ -163,22 +200,18 @@ Chart.register(...registerables);
       position: absolute; bottom: 100%; right: 0; 
       background: var(--surface); border: 1px solid var(--border); 
       border-radius: 0.6rem; display: flex; flex-direction: column; 
-      padding: 0.3rem; z-index: 10000 !important; min-width: 140px; 
+      padding: 0.3rem; z-index: 10000 !important; min-width: 130px; 
       box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
-      animation: pop 0.15s ease-out; margin-bottom: 0.5rem;
+      animation: pop 0.15s ease-out; margin-bottom: 0.4rem;
     }
-    @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .m-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.6rem; border: none; background: none; color: var(--text-primary); font-size: 0.8rem; font-weight: 600; cursor: pointer; width: 100%; text-align: left; border-radius: 0.4rem; transition: background 0.2s; }
+    @keyframes pop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .m-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; border: none; background: none; color: var(--text-primary); font-size: 0.75rem; font-weight: 600; cursor: pointer; width: 100%; text-align: left; border-radius: 0.3rem; }
     .m-item:hover { background: var(--surface2); }
     .m-item.danger { color: var(--danger); }
 
+    .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent); color: white; border: none; border-radius: 0.625rem; cursor: pointer; font-size: 0.85rem; font-weight: 700; padding: 0.7rem 1.25rem; transition: all 0.2s; }
     .spin { animation: spin 1.2s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    .action-row { display: flex; margin-top: 1rem; }
-    .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent); color: white; border: none; border-radius: 0.625rem; cursor: pointer; font-size: 0.875rem; font-weight: 700; padding: 0.75rem 1.5rem; transition: all 0.2s; }
-    .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
   `]
 })
 export class InboxComponent implements OnInit, AfterViewInit {
@@ -191,15 +224,18 @@ export class InboxComponent implements OnInit, AfterViewInit {
   loading = true;
   error   = '';
   stats   = { 
+    totalEmailsInGmail: 0,
     totalEmailsScanned: 0, 
     unreadCount: 0, 
-    riskSignals: 0,
+    starredCount: 0,
+    draftsCount: 0,
+    important: 0,
     spam: 0,
     promotions: 0,
     otp: 0,
     newsletters: 0,
-    important: 0,
-    other: 0
+    other: 0,
+    initialSyncStatus: 'pending'
   };
   recentEmails: any[] = [];
   activeMenuId: string | null = null;
@@ -235,7 +271,7 @@ export class InboxComponent implements OnInit, AfterViewInit {
       this.recentEmails = (emailsRes.emails || []).slice(0, 5);
       this.updateDonut();
     } catch (e: any) {
-      this.error = 'Failed to load dashboard.';
+      this.error = 'Failed to load dash.';
     } finally { this.loading = false; }
   }
 
@@ -256,8 +292,7 @@ export class InboxComponent implements OnInit, AfterViewInit {
     }
   }
 
-  private get grid() { return this.theme.theme() === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)'; }
-  private get txt()  { return this.theme.theme() === 'dark' ? '#94a3b8' : '#64748b'; }
+  private get txt() { return this.theme.theme() === 'dark' ? '#94a3b8' : '#64748b'; }
 
   private buildCharts() {
     if (!this.donutRef?.nativeElement) return;
@@ -269,19 +304,14 @@ export class InboxComponent implements OnInit, AfterViewInit {
             data: [0, 0, 0, 0, 0, 0], 
             backgroundColor: ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#94a3b8'], 
             borderWidth: 0, 
-            hoverOffset: 10 
+            hoverOffset: 12 
         }]
       },
       options: {
         responsive: true, 
         maintainAspectRatio: false, 
-        cutout: '75%',
-        plugins: { 
-            legend: { 
-                position: 'bottom', 
-                labels: { color: this.txt, boxWidth: 10, font: { size: 11 }, padding: 15 } 
-            } 
-        }
+        cutout: '72%',
+        plugins: { legend: { position: 'bottom', labels: { color: this.txt, boxWidth: 8, font: { size: 10 }, padding: 12 } } }
       }
     });
   }

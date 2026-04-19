@@ -4,7 +4,7 @@ import { SupabaseService } from '../services/supabase.service';
 
 export const authGuard: CanActivateFn = async () => {
   const supabase = inject(SupabaseService);
-  const router   = inject(Router);
+  const router = inject(Router);
 
   // Give Supabase a moment to hydrate the session from the URL hash after OAuth
   let session = await supabase.getSession();
@@ -22,10 +22,10 @@ export const authGuard: CanActivateFn = async () => {
 
 export const loginGuard: CanActivateFn = async () => {
   const supabase = inject(SupabaseService);
-  const router   = inject(Router);
-  const session  = await supabase.getSession();
+  const router = inject(Router);
+  const session = await supabase.getSession();
   if (session) {
-    router.navigate(['/dashboard/inbox']);
+    router.navigate(['/dashboard/summary']);
     return false;
   }
   return true;

@@ -8,7 +8,7 @@ const logger = createLogger('jobs.historical-sync');
 
 export const processHistoricalSync = async (userId: string) => {
     logger.info('Starting historical sync', { userId });
-    
+
     // 1. Get user tokens and current progress
     const { data: user, error } = await supabase
         .from('user_tokens')
@@ -34,7 +34,7 @@ export const processHistoricalSync = async (userId: string) => {
     const gmail = getGmailClient(user.gmail_token, user.refresh_token);
     let pageToken = user.initial_sync_next_page_token || undefined;
     let totalSynced = 0;
-    
+
     // We fetch in chunks to avoid timeouts/overwhelming resources
     // In a real production app, this would be re-queued per page.
     logger.info('Fetching page of historical emails', { userId, pageToken });
@@ -42,7 +42,7 @@ export const processHistoricalSync = async (userId: string) => {
     try {
         const listRes = await gmail.users.messages.list({
             userId: 'me',
-            maxResults: 50,
+            maxResults: 100,
             pageToken: pageToken
         });
 
@@ -52,14 +52,14 @@ export const processHistoricalSync = async (userId: string) => {
         const emailDataBatch = await Promise.all(
             messages.map(async (msg) => {
                 try {
-                    const detail = await gmail.users.messages.get({ 
+                    const detail = await gmail.users.messages.get({
                         userId: 'me', id: msg.id as string, format: 'metadata',
                         metadataHeaders: ['From', 'Subject', 'Date', 'List-Unsubscribe']
                     });
                     const headers = detail.data.payload?.headers || [];
                     const labels = detail.data.labelIds || [];
                     const dateVal = headers.find(h => h.name?.toLowerCase() === 'date')?.value;
-                    
+
                     return {
                         message_id: msg.id as string,
                         thread_id: msg.threadId as string,
@@ -84,7 +84,7 @@ export const processHistoricalSync = async (userId: string) => {
             initial_sync_next_page_token: nextPageToken || null,
             initial_sync_status: nextPageToken ? 'in_progress' : 'completed'
         };
-        
+
         // If it's the first ever page, we set last_sync_at to now so manual sync doesn't fetch historicals again
         if (!user.last_sync_at) {
             updates.last_sync_at = new Date().toISOString();

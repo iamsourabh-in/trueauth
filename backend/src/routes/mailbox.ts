@@ -47,29 +47,43 @@ mailboxRouter.get('/status', requireAuth, async (req: AuthRequest, res) => {
 
     const emails = statsData || [];
     const stats: any = {
-        spam: emails.filter(e => e.category === 'spam').length,
-        promotions: emails.filter(e => e.category === 'promotions').length,
-        otp: emails.filter(e => e.category === 'otp').length,
-        newsletters: emails.filter(e => e.category === 'newsletters').length,
-        important: emails.filter(e => e.category === 'important').length,
-        other: emails.filter(e => e.category === 'other').length,
-        total: emails.length,
-        initialSyncStatus: tokenData?.initial_sync_status || 'pending'
+      spam: emails.filter(e => e.category === 'spam').length,
+      promotions: emails.filter(e => e.category === 'promotions').length,
+      otp: emails.filter(e => e.category === 'otp').length,
+      newsletters: emails.filter(e => e.category === 'newsletters').length,
+      important: emails.filter(e => e.category === 'important').length,
+      other: emails.filter(e => e.category === 'other').length,
+      total: emails.length,
+      initialSyncStatus: tokenData?.initial_sync_status || 'pending'
     };
 
     if (!tokenData?.gmail_token) {
-        return res.json({ ...stats, unreadCount: 0, status: 'incomplete' });
+      return res.json({ ...stats, unreadCount: 0, status: 'incomplete' });
     }
-    
+
     const gmail = getGmailClient(tokenData.gmail_token, tokenData.refresh_token);
-    const unreadRes = await gmail.users.messages.list({ userId: 'me', q: 'is:unread', maxResults: 1 });
+
+    // 2. Fetch Gmail profile and specific counts
+    const [profileRes, unreadRes, starredRes, draftsRes] = await Promise.all([
+      gmail.users.getProfile({ userId: 'me' }),
+      gmail.users.messages.list({ userId: 'me', q: 'is:unread', maxResults: 1 }),
+      gmail.users.labels.get({ userId: 'me', id: 'STARRED' }),
+      gmail.users.labels.get({ userId: 'me', id: 'DRAFT' })
+    ]);
+
+    const totalEmailsInGmail = profileRes.data.messagesTotal || 0;
     const unreadCount = unreadRes.data.resultSizeEstimate || 0;
+    const starredCount = starredRes.data.messagesTotal || 0;
+    const draftsCount = draftsRes.data.messagesTotal || 0;
 
     res.json({
       ...stats,
       unreadCount,
+      starredCount,
+      draftsCount,
+      totalEmailsInGmail,
       totalEmailsScanned: stats.total,
-      riskSignals: 10, 
+      riskSignals: 10,
       status: 'completed'
     });
 
@@ -101,21 +115,21 @@ mailboxRouter.post('/sync', requireAuth, async (req: AuthRequest, res) => {
     if (!tokenData?.gmail_token) return res.status(400).json({ error: 'Tokens missing' });
 
     const gmail = getGmailClient(tokenData.gmail_token, tokenData.refresh_token);
-    
+
     // 1. Calculate the 'after:' date filter for incremental sync
     let query = '';
     if (tokenData.last_sync_at) {
-        const date = new Date(tokenData.last_sync_at);
-        date.setDate(date.getDate() - 1); 
-        const dateStr = date.toISOString().split('T')[0].replace(/-/g, '/');
-        query = `after:${dateStr}`;
+      const date = new Date(tokenData.last_sync_at);
+      date.setDate(date.getDate() - 1);
+      const dateStr = date.toISOString().split('T')[0].replace(/-/g, '/');
+      query = `after:${dateStr}`;
     }
 
     // 2. Fetch messages since last sync (or last 100 if never sync'd)
-    const listRes = await gmail.users.messages.list({ 
-        userId: 'me', 
-        q: query,
-        maxResults: 100 
+    const listRes = await gmail.users.messages.list({
+      userId: 'me',
+      q: query,
+      maxResults: 100
     });
     const messages = listRes.data.messages || [];
 
@@ -123,14 +137,14 @@ mailboxRouter.post('/sync', requireAuth, async (req: AuthRequest, res) => {
       messages.map(async (msg) => {
         if (!msg.id) return null;
         try {
-          const detail = await gmail.users.messages.get({ 
+          const detail = await gmail.users.messages.get({
             userId: 'me', id: msg.id, format: 'metadata',
             metadataHeaders: ['From', 'Subject', 'Date', 'List-Unsubscribe']
           });
           const headers = detail.data.payload?.headers || [];
           const labels = detail.data.labelIds || [];
           const dateVal = headers.find(h => h.name?.toLowerCase() === 'date')?.value;
-          
+
           return {
             message_id: msg.id,
             thread_id: msg.threadId || '',
@@ -148,7 +162,7 @@ mailboxRouter.post('/sync', requireAuth, async (req: AuthRequest, res) => {
     if (validEmails.length > 0) {
       const { saveEmails } = await import('../services/email.storage.service');
       await saveEmails(userId, validEmails);
-      
+
       // Update last_sync_at in DB
       await supabase.from('user_tokens')
         .update({ last_sync_at: new Date().toISOString() })

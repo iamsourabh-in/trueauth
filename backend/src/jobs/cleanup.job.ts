@@ -37,12 +37,12 @@ export const processCleanup = async (job: Job) => {
 
       for (const msg of msgs) {
         if (!msg.id) continue;
-        
+
         // Remove inbox label, add ToReview  @clean
         await gmail.users.messages.modify({
           userId: 'me',
           id: msg.id,
-          requestBody: { 
+          requestBody: {
             removeLabelIds: ['INBOX'],
             addLabelIds: toReviewLabelId ? [toReviewLabelId] : []
           }
@@ -57,7 +57,7 @@ export const processCleanup = async (job: Job) => {
         });
       }
     } else if (action === 'delete-otps') {
-      const res = await gmail.users.messages.list({ userId: 'me', q: 'older_than:1h OTP OR verification OR code', maxResults: 50 });
+      const res = await gmail.users.messages.list({ userId: 'me', q: 'older_than:1h OTP OR verification OR code', maxResults: 100 });
       const msgs = res.data.messages || [];
 
       for (const msg of msgs) {
