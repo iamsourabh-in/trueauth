@@ -26,9 +26,10 @@ This guide outlines how to deploy the entire TrueAuth stack using free-tier serv
   - Connect your GitHub repository.
   - **Runtime**: Render might auto-detect 'Docker'. **Change the Runtime dropdown to 'Node'** manually.
   - **Root Directory**: Set this to `backend` (Found under the **Advanced** toggle).
-  - **Build Command**: `npm install && npm run build` (This runs `tsc` to compile TypeScript).
-  - **Start Command**: `node dist/index.js` (or `npm start`).
-  - **Environment Variables**: Add all keys from your `.env` file.
+  - **Start Command**: `npm start` (Now runs pre-compiled JS).
+  - **Environment Variables**: 
+    - Add all keys from your `.env` file.
+    - **Crucial**: Add `NODE_OPTIONS` = `--max-old-space-size=400` (This prevents 'Out of Memory' crashes on Render's 512MB free tier).
   - *Note: Free tier services "spin down" after inactivity. First request might take ~30s.*
 
 ## 4. Frontend (Vercel)
