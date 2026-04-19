@@ -75,9 +75,9 @@ export class ApiService {
     return firstValueFrom(this.http.post<any>(`${this.baseUrl}/mailbox/sync`, {}, { headers }));
   }
 
-  async getEmails() {
+  async getEmails(page: number = 1, limit: number = 50) {
     const headers = await this.getHeaders();
-    return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/emails`, { headers }));
+    return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/emails?page=${page}&limit=${limit}`, { headers }));
   }
 
   async deleteMessage(messageId: string) {
@@ -88,5 +88,15 @@ export class ApiService {
   async purgeData() {
     const headers = await this.getHeaders();
     return firstValueFrom(this.http.post<any>(`${this.baseUrl}/auth/purge`, {}, { headers }));
+  }
+
+  async pauseHistoricalSync() {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.post<any>(`${this.baseUrl}/mailbox/historical/pause`, {}, { headers }));
+  }
+
+  async resumeHistoricalSync() {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.post<any>(`${this.baseUrl}/mailbox/historical/resume`, {}, { headers }));
   }
 }

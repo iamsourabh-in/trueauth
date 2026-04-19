@@ -31,7 +31,7 @@ import { LucideAngularModule } from 'lucide-angular';
         <div 
           class="email-item" 
           *ngFor="let email of emails; let i = index" 
-          [style.animation-delay]="i * 20 + 'ms'"
+          [style.animation-delay]="(i % 50) * 20 + 'ms'"
           [class.menu-open]="activeMenuId === email.message_id"
           [style.z-index]="activeMenuId === email.message_id ? 1000 : 1"
         >
@@ -64,6 +64,13 @@ import { LucideAngularModule } from 'lucide-angular';
           </div>
         </div>
 
+        <!-- Load More -->
+        <div class="pagination-area" *ngIf="hasMore && !loading">
+            <button class="btn-secondary" (click)="loadMore()">
+                <span>Load More</span>
+            </button>
+        </div>
+
         <div class="empty-state" *ngIf="!loading && emails.length === 0">
           <lucide-icon name="mail" [size]="40" style="opacity: 0.2"></lucide-icon>
           <h3>No emails synced</h3>
@@ -73,12 +80,17 @@ import { LucideAngularModule } from 'lucide-angular';
     </div>
   `,
   styles: [`
-    .email-page { display: flex; flex-direction: column; gap: 1.5rem; }
+    .email-page { display: flex; flex-direction: column; gap: 1.5rem; padding-bottom: 3rem; }
     .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
     .page-title { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.25rem; }
     .page-sub { font-size: 0.875rem; color: var(--text-secondary); }
     
     .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent); color: white; border: none; border-radius: 0.625rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; padding: 0.65rem 1.25rem; transition: all 0.2s; }
+    .btn-secondary { display: flex; align-items: center; justify-content: center; width: 100%; padding: 0.8rem; background: var(--surface); border: 1px dashed var(--border); border-radius: 0.75rem; color: var(--text-secondary); font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+
+    .pagination-area { padding: 1rem 0; }
+
     .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
     
     .spin { animation: spin 1s linear infinite; }
@@ -139,6 +151,9 @@ export class EmailListComponent implements OnInit {
   syncing = false;
   emails: any[] = [];
   activeMenuId: string | null = null;
+  
+  currentPage = 1;
+  hasMore = false;
 
   @HostListener('document:click')
   closeMenus() {
@@ -149,20 +164,30 @@ export class EmailListComponent implements OnInit {
     await this.load();
   }
 
-  async load() {
-    this.loading = true;
+  async load(page: number = 1) {
+    if (page === 1) this.loading = true;
     try {
-      const res = await this.api.getEmails();
-      this.emails = (res.emails || []).slice(0, 100);
+      const res = await this.api.getEmails(page);
+      if (page === 1) {
+        this.emails = res.emails || [];
+      } else {
+        this.emails = [...this.emails, ...(res.emails || [])];
+      }
+      this.hasMore = res.hasMore;
+      this.currentPage = page;
     } catch { }
     finally { this.loading = false; }
+  }
+
+  async loadMore() {
+    await this.load(this.currentPage + 1);
   }
 
   async sync() {
     this.syncing = true;
     try {
       await this.api.syncMailbox();
-      await this.load();
+      await this.load(1);
     } catch { }
     finally { this.syncing = false; }
   }

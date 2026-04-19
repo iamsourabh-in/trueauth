@@ -14,6 +14,22 @@ Chart.register(...registerables);
   imports: [CommonModule, LucideAngularModule],
   template: `
     <div class="inbox-page">
+      <!-- Sync Status Banner -->
+      <div class="sync-banner" *ngIf="stats.initialSyncStatus === 'in_progress' || stats.initialSyncStatus === 'paused'">
+        <div class="spinner-sm" [class.paused]="stats.initialSyncStatus === 'paused'"></div>
+        <span *ngIf="stats.initialSyncStatus === 'in_progress'">Historical scan in progress... Older emails are being ingested.</span>
+        <span *ngIf="stats.initialSyncStatus === 'paused'">Historical scan paused.</span>
+        
+        <button class="banner-btn" *ngIf="stats.initialSyncStatus === 'in_progress'" (click)="pauseScan()">
+          <lucide-icon name="pause" [size]="12"></lucide-icon>
+          <span>Pause</span>
+        </button>
+        <button class="banner-btn resume" *ngIf="stats.initialSyncStatus === 'paused'" (click)="resumeScan()">
+          <lucide-icon name="play" [size]="12"></lucide-icon>
+          <span>Resume</span>
+        </button>
+      </div>
+
       <!-- Top Primary Stats -->
       <div class="stats-row grid-4">
         <div class="stat-card">
@@ -151,6 +167,33 @@ Chart.register(...registerables);
   styles: [`
     .inbox-page { display: flex; flex-direction: column; gap: 1rem; }
     
+    .sync-banner { 
+      display: flex; align-items: center; gap: 0.75rem; 
+      padding: 0.75rem 1rem; background: var(--accent-subtle); 
+      border: 1px solid var(--accent); border-radius: 0.75rem;
+      color: var(--accent); font-size: 0.85rem; font-weight: 600;
+      animation: slideDown 0.3s ease-out;
+    }
+    .spinner-sm { 
+      width: 14px; height: 14px; border: 2px solid var(--accent); 
+      border-top-color: transparent; border-radius: 50%; 
+      animation: spin 0.8s linear infinite; 
+    }
+
+    .spinner-sm.paused { animation-play-state: paused; opacity: 0.5; }
+    
+    .banner-btn {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.35rem 0.75rem; border-radius: 2rem;
+      border: 1px solid var(--accent); background: white;
+      color: var(--accent); font-size: 0.75rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .banner-btn:hover { background: var(--accent); color: white; }
+    .banner-btn.resume { background: var(--accent); color: white; }
+    .banner-btn.resume:hover { filter: brightness(1.1); }
+
     .stats-row { display: grid; gap: 1rem; }
     .grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
     .grid-2-wide { grid-template-columns: 1fr 1fr; }
@@ -273,6 +316,21 @@ export class InboxComponent implements OnInit, AfterViewInit {
     } catch (e: any) {
       this.error = 'Failed to load dash.';
     } finally { this.loading = false; }
+  }
+
+  async pauseScan() {
+    try {
+      await this.api.pauseHistoricalSync();
+      this.stats.initialSyncStatus = 'paused';
+    } catch { }
+  }
+
+  async resumeScan() {
+    try {
+      await this.api.resumeHistoricalSync();
+      this.stats.initialSyncStatus = 'in_progress';
+      // Status will eventually update via polling or next refresh too
+    } catch { }
   }
 
   toggleMenu(event: Event, id: string) {

@@ -150,8 +150,9 @@ authRouter.post('/sync-google-tokens', requireAuth, async (req: AuthRequest, res
       }
       logger.info('user_tokens inserted', { requestId: req.requestId, userId });
 
-      // Trigger historical sync in background
-      import('../jobs/historical-sync.job').then(m => m.processHistoricalSync(userId));
+      // Trigger historical sync in background via Bull Queue
+      const { syncQueue } = await import('../config/bull');
+      await syncQueue.add({ userId }, { removeOnComplete: true });
     }
 
     res.json({ ok: true, requestId: req.requestId });

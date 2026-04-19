@@ -3,11 +3,18 @@ import { getGmailClient } from '../config/google';
 import { identifyCategory } from '../services/email.analysis.service';
 import { saveEmails } from '../services/email.storage.service';
 import { createLogger } from '../lib/logger';
+import { syncQueue } from '../config/bull';
+import { Job } from 'bull';
 
 const logger = createLogger('jobs.historical-sync');
 
-export const processHistoricalSync = async (userId: string) => {
-    logger.info('Starting historical sync', { userId });
+/**
+ * Historical sync job processor.
+ * Fetches one page of emails and re-queues itself if there are more.
+ */
+export const processHistoricalSync = async (job: Job<{ userId: string }>) => {
+    const { userId } = job.data;
+    logger.info('Running historical sync job', { userId, jobId: job.id });
 
     // 1. Get user tokens and current progress
     const { data: user, error } = await supabase
@@ -22,22 +29,17 @@ export const processHistoricalSync = async (userId: string) => {
     }
 
     if (user.initial_sync_status === 'completed') {
-        logger.info('Historical sync already completed for user', { userId });
+        logger.info('Historical sync already marked as completed', { userId });
         return;
     }
 
-    // Mark as in progress if pending
-    if (user.initial_sync_status === 'pending') {
-        await supabase.from('user_tokens').update({ initial_sync_status: 'in_progress' }).eq('user_id', userId);
+    if (user.initial_sync_status === 'paused') {
+        logger.info('Historical sync is paused by user', { userId });
+        return;
     }
 
     const gmail = getGmailClient(user.gmail_token, user.refresh_token);
-    let pageToken = user.initial_sync_next_page_token || undefined;
-    let totalSynced = 0;
-
-    // We fetch in chunks to avoid timeouts/overwhelming resources
-    // In a real production app, this would be re-queued per page.
-    logger.info('Fetching page of historical emails', { userId, pageToken });
+    const pageToken = user.initial_sync_next_page_token || undefined;
 
     try {
         const listRes = await gmail.users.messages.list({
@@ -58,15 +60,15 @@ export const processHistoricalSync = async (userId: string) => {
                     });
                     const headers = detail.data.payload?.headers || [];
                     const labels = detail.data.labelIds || [];
-                    const dateVal = headers.find(h => h.name?.toLowerCase() === 'date')?.value;
-
+                    const internalDate = detail.data.internalDate;
+                    
                     return {
                         message_id: msg.id as string,
                         thread_id: msg.threadId as string,
                         sender: headers.find(h => h.name?.toLowerCase() === 'from')?.value || 'Unknown',
                         subject: headers.find(h => h.name?.toLowerCase() === 'subject')?.value || '(No Subject)',
                         snippet: detail.data.snippet || '',
-                        received_at: new Date(dateVal || Date.now()).toISOString(),
+                        received_at: new Date(parseInt(internalDate || '0') || Date.now()).toISOString(),
                         category: identifyCategory(headers, labels)
                     };
                 } catch { return null; }
@@ -76,32 +78,37 @@ export const processHistoricalSync = async (userId: string) => {
         const validEmails = emailDataBatch.filter(e => e !== null) as any[];
         if (validEmails.length > 0) {
             await saveEmails(userId, validEmails);
-            totalSynced += validEmails.length;
         }
 
-        // Update progress
+        // Update progress in DB
         const updates: any = {
             initial_sync_next_page_token: nextPageToken || null,
             initial_sync_status: nextPageToken ? 'in_progress' : 'completed'
         };
 
-        // If it's the first ever page, we set last_sync_at to now so manual sync doesn't fetch historicals again
+        // Ensure manual sync knows where the "new" stuff starts
         if (!user.last_sync_at) {
             updates.last_sync_at = new Date().toISOString();
         }
 
         await supabase.from('user_tokens').update(updates).eq('user_id', userId);
 
-        logger.info('Historical sync page completed', { userId, count: validEmails.length, next: !!nextPageToken });
+        logger.info('Historical sync batch processed', {
+            userId,
+            count: validEmails.length,
+            hasMore: !!nextPageToken
+        });
 
-        // If there's more, we could recursively call or use a queue.
-        // For this demo, let's assume we trigger another run later or use a loop for a few pages.
+        // 3. RECURSION: If there's more, add another job to the queue with a slight delay
         if (nextPageToken) {
-            // In a background worker env, you'd re-add to queue here.
-            // For now, we'll let the next job invocation pick it up.
+            await syncQueue.add({ userId }, {
+                delay: 30000, // Wait 30 seconds to avoid hitting Google Rate Limits too hard
+                removeOnComplete: true
+            });
         }
 
     } catch (e: any) {
-        logger.error('Historical sync failed at page', { userId, error: e.message });
+        logger.error('Historical sync batch failed', { userId, error: e.message });
+        throw e; // Bull will retry if configured
     }
 };
