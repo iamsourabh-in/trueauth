@@ -67,15 +67,16 @@ export class ApiService {
     }
   }
 
-  async getSubscriptions() {
-    console.info('[API] GET /subscriptions');
+  async getSubscriptions(forceRefresh = false) {
+    const url = forceRefresh ? `${this.baseUrl}/subscriptions?refresh=true` : `${this.baseUrl}/subscriptions`;
+    console.info(`[API] GET ${url}`);
     const headers = await this.getHeaders();
     try {
-      const res = await firstValueFrom(this.http.get<any>(`${this.baseUrl}/subscriptions`, { headers }));
-      console.info('[API] GET /subscriptions - Success', res);
+      const res = await firstValueFrom(this.http.get<any>(url, { headers }));
+      console.info(`[API] GET ${url} - Success`, res);
       return res;
     } catch (error) {
-      console.error('[API] GET /subscriptions - Failed', error);
+      console.error(`[API] GET ${url} - Failed`, error);
       throw error;
     }
   }

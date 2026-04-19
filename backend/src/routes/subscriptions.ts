@@ -3,8 +3,10 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getGmailClient } from '../config/google';
 import { supabase } from '../config/supabase';
 import { createLogger, requestLogMeta } from '../lib/logger';
+import { redis } from '../config/redis';
 
 const logger = createLogger('routes.subscriptions');
+const CACHE_TTL = 3600; // 1 hour in seconds
 
 export const subscriptionsRouter = Router();
 
@@ -29,6 +31,21 @@ subscriptionsRouter.get('/', requireAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'User not found' });
+
+    const cacheKey = `subs:${userId}`;
+
+    // Force refresh if requested
+    if (req.query.refresh === 'true') {
+      await redis.del(cacheKey);
+      logger.info('Cache cleared for user due to refresh request', { ...requestLogMeta(req), userId });
+    }
+
+    // Check Cache
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+      logger.info('Serving subscriptions from cache', { ...requestLogMeta(req), userId });
+      return res.json(JSON.parse(cachedData));
+    }
 
     const { data: tokenData } = await supabase.from('user_tokens').select('*').eq('user_id', userId).single();
     if (!tokenData?.gmail_token) {
@@ -70,7 +87,6 @@ subscriptionsRouter.get('/', requireAuth, async (req: AuthRequest, res) => {
                     unsubscribeLink: unsubscribeHeader.value
                 });
             }
-            // For MVP, we skip LLM body evaluation on all emails to save time/cost unless requested explicitly
         } catch (e: unknown) {
             logger.warn('Failed to fetch message for subscription scan', {
               ...requestLogMeta(req),
@@ -82,8 +98,13 @@ subscriptionsRouter.get('/', requireAuth, async (req: AuthRequest, res) => {
 
     // Deduplicate by sender
     const uniqueSubs = Array.from(new Map(subscriptions.map(item => [item.sender, item])).values());
+    const result = { subscriptions: uniqueSubs };
 
-    res.json({ subscriptions: uniqueSubs });
+    // Save to Cache
+    await redis.setex(cacheKey, CACHE_TTL, JSON.stringify(result));
+    logger.info('Saved subscriptions to cache', { ...requestLogMeta(req), userId });
+
+    res.json(result);
 
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);

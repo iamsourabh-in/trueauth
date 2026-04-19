@@ -16,7 +16,7 @@ interface Sub { sender: string; unsubscribeLink?: string; }
           <h2 class="page-title">Your Subscriptions</h2>
           <p class="page-sub">AI-detected marketing subscriptions with one-click unsubscribe.</p>
         </div>
-        <button class="btn-primary" (click)="load()" [disabled]="loading">
+        <button class="btn-primary" (click)="load(true)" [disabled]="loading">
           <lucide-icon name="refresh-cw" [size]="15" color="white"></lucide-icon>
           {{ loading ? 'Scanning…' : 'Refresh' }}
         </button>
@@ -88,10 +88,10 @@ export class SubscriptionsPageComponent implements OnInit {
 
   async ngOnInit() { await this.load(); }
 
-  async load() {
+  async load(forceRefresh = false) {
     this.loading = true;
     try {
-      const res = await this.api.getSubscriptions();
+      const res = await this.api.getSubscriptions(forceRefresh);
       this.subs = res.subscriptions ?? [];
     } catch { this.subs = []; }
     finally { this.loading = false; }
