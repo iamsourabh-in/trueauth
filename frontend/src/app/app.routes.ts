@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './pages/login/login.component';
 import { DashboardLayoutComponent } from './pages/dashboard/dashboard-layout.component';
 import { InboxComponent } from './pages/dashboard/inbox/inbox.component';
+import { EmailListComponent } from './pages/dashboard/email-list/email-list.component';
 import { SubscriptionsPageComponent } from './pages/dashboard/subscriptions/subscriptions.component';
 import { CleanupPageComponent } from './pages/dashboard/cleanup/cleanup.component';
 import { DraftPageComponent } from './pages/dashboard/draft/draft.component';
@@ -18,8 +19,9 @@ export const routes: Routes = [
     component: DashboardLayoutComponent,
     canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'inbox', pathMatch: 'full' },
-      { path: 'inbox',         component: InboxComponent },
+      { path: '', redirectTo: 'summary', pathMatch: 'full' },
+      { path: 'summary',       component: InboxComponent },
+      { path: 'inbox',         component: EmailListComponent },
       { path: 'subscriptions', component: SubscriptionsPageComponent },
       { path: 'cleanup',       component: CleanupPageComponent },
       { path: 'draft',         component: DraftPageComponent },

@@ -184,7 +184,8 @@ export class DashboardLayoutComponent {
   collapsed = false;
 
   navItems: NavItem[] = [
-    { label: 'Inbox Overview',  route: '/dashboard/inbox',         icon: 'inbox' },
+    { label: 'Overview',        route: '/dashboard/summary',       icon: 'layout' },
+    { label: 'Inbox',           route: '/dashboard/inbox',         icon: 'inbox' },
     { label: 'Subscriptions',   route: '/dashboard/subscriptions', icon: 'bell' },
     { label: 'Cleanup Rules',   route: '/dashboard/cleanup',       icon: 'trash-2' },
     { label: 'AI Draft',        route: '/dashboard/draft',         icon: 'pen-box' },
