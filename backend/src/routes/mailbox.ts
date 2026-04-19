@@ -34,31 +34,29 @@ mailboxRouter.get('/status', requireAuth, async (req: AuthRequest, res) => {
     if (!userId) return res.status(401).json({ error: 'User not found' });
 
     // 1. Fetch counts from DB
-    const { data: counts, error: countError } = await supabase
+    const { data: statsData } = await supabase
       .from('emails')
       .select('category')
       .eq('user_id', userId);
 
-    if (countError) throw countError;
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('gmail_token, refresh_token, initial_sync_status')
+      .eq('user_id', userId)
+      .single();
 
-    const stats = {
-        spam: 0,
-        promotions: 0,
-        otp: 0,
-        newsletters: 0,
-        important: 0,
-        other: 0,
-        total: (counts || []).length
+    const emails = statsData || [];
+    const stats: any = {
+        spam: emails.filter(e => e.category === 'spam').length,
+        promotions: emails.filter(e => e.category === 'promotions').length,
+        otp: emails.filter(e => e.category === 'otp').length,
+        newsletters: emails.filter(e => e.category === 'newsletters').length,
+        important: emails.filter(e => e.category === 'important').length,
+        other: emails.filter(e => e.category === 'other').length,
+        total: emails.length,
+        initialSyncStatus: tokenData?.initial_sync_status || 'pending'
     };
 
-    (counts || []).forEach(row => {
-        const cat = (row.category || 'other').toLowerCase() as keyof typeof stats;
-        if (stats[cat] !== undefined) stats[cat]++;
-        else stats.other++;
-    });
-
-    // 2. Fetch tokens and Gmail unread count
-    const { data: tokenData } = await supabase.from('user_tokens').select('*').eq('user_id', userId).single();
     if (!tokenData?.gmail_token) {
         return res.json({ ...stats, unreadCount: 0, status: 'incomplete' });
     }
@@ -155,6 +153,13 @@ mailboxRouter.post('/sync', requireAuth, async (req: AuthRequest, res) => {
       await supabase.from('user_tokens')
         .update({ last_sync_at: new Date().toISOString() })
         .eq('user_id', userId);
+
+      // Log the sync event
+      await supabase.from('sync_log').insert({
+        user_id: userId,
+        emails_count: validEmails.length,
+        status: 'success'
+      });
     }
 
     res.json({ status: 'completed', count: validEmails.length });

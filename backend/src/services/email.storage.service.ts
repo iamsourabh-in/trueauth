@@ -67,5 +67,9 @@ export const saveEmails = async (userId: string, emails: EmailData[]) => {
 export const getCachedEmails = async (userId: string): Promise<EmailData[]> => {
     const redisKey = `recent_emails:${userId}`;
     const rawEmails = await redis.lrange(redisKey, 0, 99);
-    return rawEmails.map(r => JSON.parse(r));
+    const emails = rawEmails.map(r => JSON.parse(r) as EmailData);
+    // Always sort latest first before returning
+    return emails.sort((a, b) => 
+        new Date(b.received_at).getTime() - new Date(a.received_at).getTime()
+    );
 };

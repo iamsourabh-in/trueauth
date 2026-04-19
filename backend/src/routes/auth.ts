@@ -149,6 +149,9 @@ authRouter.post('/sync-google-tokens', requireAuth, async (req: AuthRequest, res
         });
       }
       logger.info('user_tokens inserted', { requestId: req.requestId, userId });
+
+      // Trigger historical sync in background
+      import('../jobs/historical-sync.job').then(m => m.processHistoricalSync(userId));
     }
 
     res.json({ ok: true, requestId: req.requestId });

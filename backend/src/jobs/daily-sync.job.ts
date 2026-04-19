@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabase';
 import { getGmailClient } from '../config/google';
-import { identifyCategory } from '../routes/mailbox'; // I might need to export this or move it to a service
+import { identifyCategory } from '../services/email.analysis.service';
 import { saveEmails } from '../services/email.storage.service';
 import { createLogger } from '../lib/logger';
 
@@ -65,6 +65,13 @@ export const processDailySync = async () => {
                 await supabase.from('user_tokens')
                     .update({ last_sync_at: new Date().toISOString() })
                     .eq('user_id', user.user_id);
+
+                // Log the sync event
+                await supabase.from('sync_log').insert({
+                    user_id: user.user_id,
+                    emails_count: validEmails.length,
+                    status: 'success'
+                });
             }
             logger.info('Daily sync completed for user', { userId: user.user_id, count: validEmails.length });
         } catch (e) {
