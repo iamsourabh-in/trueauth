@@ -6,12 +6,22 @@ dotenv.config();
 
 const targetPath = './src/environments/environment.prod.ts';
 
+// Helper to get env with error if missing
+const getEnv = (name) => {
+  const val = process.env[name];
+  if (!val || val === 'undefined') {
+    console.error(`ERROR: Environment variable ${name} is missing!`);
+    process.exit(1);
+  }
+  return val;
+};
+
 // Get values from environment variables (e.g. set in Vercel UI)
 const envConfigFile = `export const environment = {
   production: true,
-  supabaseUrl: '${process.env.SUPABASE_URL}',
-  supabaseKey: '${process.env.SUPABASE_ANON_KEY}',
-  apiUrl: '${process.env.API_URL}'
+  supabaseUrl: '${getEnv('SUPABASE_URL')}',
+  supabaseKey: '${getEnv('SUPABASE_ANON_KEY')}',
+  apiUrl: '${getEnv('API_URL')}'
 };
 `;
 

@@ -24,9 +24,9 @@ This guide outlines how to deploy the entire TrueAuth stack using free-tier serv
 - **Service Type**: Web Service (Node.js).
 - **Actions**:
   - Connect your GitHub repository.
-  - Root Directory: `backend`.
-  - Build Command: `npm install && npm run build`.
-  - Start Command: `npm start`.
+  - **Root Directory**: Set this to `backend` (This is usually found at the bottom of the page under the **Advanced** toggle).
+  - **Build Command**: `npm install && npm run build` (This runs `tsc` to compile TypeScript).
+  - **Start Command**: `node dist/index.js` (or `npm start`).
   - **Environment Variables**: Add all keys from your `.env` file.
   - *Note: Free tier services "spin down" after inactivity. First request might take ~30s.*
 
