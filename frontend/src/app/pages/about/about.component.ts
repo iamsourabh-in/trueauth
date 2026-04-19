@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
+import { LucideAngularModule } from 'lucide-angular';
 
 @Component({
   selector: 'app-about',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   template: `
     <div class="page-bg min-h-screen">
       <nav class="site-nav">
@@ -16,7 +17,7 @@ import { ThemeService } from '../../services/theme.service';
           <button class="nav-link" (click)="router.navigate(['/privacy'])">Privacy</button>
           <button class="nav-link cta" (click)="router.navigate(['/login'])">Sign in</button>
           <button class="theme-btn" (click)="theme.toggle()" title="Toggle theme">
-            {{ theme.theme() === 'dark' ? '☀️' : '🌙' }}
+            <lucide-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18"></lucide-icon>
           </button>
         </div>
       </nav>
@@ -65,7 +66,7 @@ import { ThemeService } from '../../services/theme.service';
     .nav-link:hover { color: var(--text-primary); background: var(--surface); }
     .nav-link.cta { background: var(--accent); color: white; padding: 0.5rem 1.25rem; font-weight: 600; }
     .nav-link.cta:hover { opacity: 0.9; }
-    .theme-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; cursor: pointer; padding: 0.4rem 0.6rem; font-size: 1rem; }
+    .theme-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center; }
     .about-main { max-width: 1000px; margin: 0 auto; padding: 4rem 2rem; }
     .about-hero { text-align: center; margin-bottom: 4rem; }
     .hero-badge { display: inline-block; padding: 0.25rem 0.9rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; background: var(--accent-subtle); color: var(--accent); margin-bottom: 1.5rem; }

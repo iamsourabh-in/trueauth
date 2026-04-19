@@ -36,7 +36,7 @@ export class SupabaseService {
   }
 
   async signInWithGoogle() {
-    const redirectTo = `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard`;
+    const redirectTo = `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard/inbox`;
     await this.supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

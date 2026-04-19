@@ -92,4 +92,43 @@ export class ApiService {
       throw error;
     }
   }
+
+  async generateDraft(threadId: string) {
+    console.info('[API] POST /draft/reply');
+    const headers = await this.getHeaders();
+    try {
+      const res = await firstValueFrom(this.http.post<any>(`${this.baseUrl}/draft/reply`, { threadId }, { headers }));
+      console.info('[API] POST /draft/reply - Success', res);
+      return res;
+    } catch (error) {
+      console.error('[API] POST /draft/reply - Failed', error);
+      throw error;
+    }
+  }
+
+  async suggestCalendarEvent(emailContent: string) {
+    console.info('[API] POST /calendar/suggest');
+    const headers = await this.getHeaders();
+    try {
+      const res = await firstValueFrom(this.http.post<any>(`${this.baseUrl}/calendar/suggest`, { emailContent }, { headers }));
+      console.info('[API] POST /calendar/suggest - Success', res);
+      return res;
+    } catch (error) {
+      console.error('[API] POST /calendar/suggest - Failed', error);
+      throw error;
+    }
+  }
+
+  async createCalendarEvent(event: { title?: string; start?: string; end?: string }) {
+    console.info('[API] POST /calendar/create');
+    const headers = await this.getHeaders();
+    try {
+      const res = await firstValueFrom(this.http.post<any>(`${this.baseUrl}/calendar/create`, event, { headers }));
+      console.info('[API] POST /calendar/create - Success', res);
+      return res;
+    } catch (error) {
+      console.error('[API] POST /calendar/create - Failed', error);
+      throw error;
+    }
+  }
 }
