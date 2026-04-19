@@ -3,33 +3,11 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getGmailClient } from '../config/google';
 import { supabase } from '../config/supabase';
 import { createLogger, requestLogMeta } from '../lib/logger';
+import { identifyCategory } from '../services/email.analysis.service';
 import { redis } from '../config/redis';
 
 
 const logger = createLogger('routes.mailbox');
-
-/**
- * Helper to identify email category based on labels and metadata
- */
-function identifyCategory(headers: any[], labels: string[]): string {
-  const labelSet = new Set(labels.map(l => l.toLowerCase()));
-  const subject = headers.find(h => h.name.toLowerCase() === 'subject')?.value?.toLowerCase() || '';
-  const from = headers.find(h => h.name.toLowerCase() === 'from')?.value?.toLowerCase() || '';
-
-  if (labelSet.has('spam')) return 'spam';
-  if (labelSet.has('category_promotions') || labelSet.has('promotions')) return 'promotions';
-  if (labelSet.has('important')) return 'important';
-
-  // Check for newsletters (List-Unsubscribe header or common terms)
-  const hasUnsub = headers.some(h => h.name.toLowerCase() === 'list-unsubscribe');
-  if (hasUnsub || from.includes('newsletter') || subject.includes('newsletter')) return 'newsletters';
-
-  // Check for OTP/Auth
-  const otpKeywords = ['otp', 'verification code', 'verify', 'password reset', 'login code', 'security code', 'your code'];
-  if (otpKeywords.some(kw => subject.includes(kw))) return 'otp';
-
-  return 'other';
-}
 
 export const mailboxRouter = Router();
 
@@ -122,68 +100,67 @@ mailboxRouter.post('/sync', requireAuth, async (req: AuthRequest, res) => {
     if (!userId) return res.status(401).json({ error: 'User not found' });
 
     const { data: tokenData } = await supabase.from('user_tokens').select('*').eq('user_id', userId).single();
-    if (!tokenData?.gmail_token) {
-      return res.status(400).json({ error: 'Google tokens not found.' });
-    }
+    if (!tokenData?.gmail_token) return res.status(400).json({ error: 'Tokens missing' });
 
     const gmail = getGmailClient(tokenData.gmail_token, tokenData.refresh_token);
+    
+    // 1. Calculate the 'after:' date filter for incremental sync
+    let query = '';
+    if (tokenData.last_sync_at) {
+        const date = new Date(tokenData.last_sync_at);
+        date.setDate(date.getDate() - 1); 
+        const dateStr = date.toISOString().split('T')[0].replace(/-/g, '/');
+        query = `after:${dateStr}`;
+    }
 
-    // 1. Fetch last 100 messages
-    const listRes = await gmail.users.messages.list({
-      userId: 'me',
-      maxResults: 100
+    // 2. Fetch messages since last sync (or last 100 if never sync'd)
+    const listRes = await gmail.users.messages.list({ 
+        userId: 'me', 
+        q: query,
+        maxResults: 100 
     });
-
     const messages = listRes.data.messages || [];
 
-    // 2. Fetch metadata concurrently (using Promise.all for speed)
-    const emailDataBatch: any[] = await Promise.all(
-      messages.slice(0, 50).map(async (msg) => {
+    const emailDataBatch = await Promise.all(
+      messages.map(async (msg) => {
         if (!msg.id) return null;
         try {
-          const fullMsg = await gmail.users.messages.get({
-            userId: 'me',
-            id: msg.id,
-            format: 'metadata',
+          const detail = await gmail.users.messages.get({ 
+            userId: 'me', id: msg.id, format: 'metadata',
             metadataHeaders: ['From', 'Subject', 'Date', 'List-Unsubscribe']
           });
-
-          const headers = fullMsg.data.payload?.headers || [];
-          const labels = fullMsg.data.labelIds || [];
-          const from = headers.find(h => h.name?.toLowerCase() === 'from')?.value || 'Unknown';
-          const subject = headers.find(h => h.name?.toLowerCase() === 'subject')?.value || '(No Subject)';
-          const dateStr = headers.find(h => h.name?.toLowerCase() === 'date')?.value || new Date().toISOString();
-
+          const headers = detail.data.payload?.headers || [];
+          const labels = detail.data.labelIds || [];
+          const dateVal = headers.find(h => h.name?.toLowerCase() === 'date')?.value;
+          
           return {
-            message_id: fullMsg.data.id,
-            thread_id: fullMsg.data.threadId,
-            sender: from,
-            subject: subject,
-            snippet: fullMsg.data.snippet || '',
-            received_at: new Date(dateStr).toISOString(),
+            message_id: msg.id,
+            thread_id: msg.threadId || '',
+            sender: headers.find(h => h.name?.toLowerCase() === 'from')?.value || 'Unknown',
+            subject: headers.find(h => h.name?.toLowerCase() === 'subject')?.value || '(No Subject)',
+            snippet: detail.data.snippet || '',
+            received_at: new Date(dateVal || Date.now()).toISOString(),
             category: identifyCategory(headers, labels)
           };
-        } catch (e) {
-          logger.warn('Skipping message sync failure', { id: msg.id });
-          return null;
-        }
+        } catch { return null; }
       })
     );
 
-    const validEmails = emailDataBatch.filter(e => e !== null);
+    const validEmails = emailDataBatch.filter(e => e !== null) as any[];
+    if (validEmails.length > 0) {
+      const { saveEmails } = await import('../services/email.storage.service');
+      await saveEmails(userId, validEmails);
+      
+      // Update last_sync_at in DB
+      await supabase.from('user_tokens')
+        .update({ last_sync_at: new Date().toISOString() })
+        .eq('user_id', userId);
+    }
 
-    // 3. Store in DB and Redis
-    const { saveEmails } = await import('../services/email.storage.service');
-    await saveEmails(userId, validEmails);
-
-    res.json({
-      message: 'Sync completed',
-      syncedCount: validEmails.length
-    });
-
+    res.json({ status: 'completed', count: validEmails.length });
   } catch (error: any) {
-    logger.error('Mailbox sync error', { ...requestLogMeta(req), error: error.message });
-    res.status(500).json({ error: 'Sync failed', details: error.message });
+    logger.error('Sync error', { ...requestLogMeta(req), error: error.message });
+    res.status(500).json({ error: 'Sync failed' });
   }
 });
 
