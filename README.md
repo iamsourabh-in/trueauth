@@ -1,73 +1,73 @@
 # TrueAuth
 
-TrueAuth is a complete, working intelligent web application that connects to your Gmail, cleans up your mailbox, manages your subscriptions, drafts contextual replies via AI, and auto-integrates with Google Calendar.
+TrueAuth is a high-performance, intelligent email management platform designed to help you reach "Inbox Zero" using AI-driven automation. It connects securely to your Gmail to categorize messages, automate cleanups, manage subscriptions, and draft contextual replies.
 
 ## Architecture
 
 - **Frontend**: Angular 17 + Tailwind CSS (Vibrant UI, Glassmorphism, Dark Mode)
 - **Backend**: Node.js + Express + TypeScript
-- **Auth & Database**: Supabase (Postgres Database, Google OAuth Provider)
-- **Background Jobs**: Bull Queue & Redis
-- **AI Processing**: Google Generative AI (Gemini 1.5-flash / Gemini 1.5-pro)
-- **Mail APIs**: the official `googleapis` npm package
+- **Auth & Database**: Supabase (Postgres, Google OAuth, Real-time RLS)
+- **Background Jobs**: Bull MQ + Redis (Distributed task processing)
+- **AI Engine**: Google Generative AI (Gemini 1.5-flash / Gemini 1.5-pro)
+- **API Engine**: Official `googleapis` library with advanced caching
 
-## Core Features
-1. **Inbox Zero Dashboard**: Clean analytics pane scanning your email pipeline and flagging risk signals.
-2. **Subscription Manager**: Extracts `List-Unsubscribe` headers securely and provides 1-click links to opt out.
-3. **Automated Cleanups**: Drop "Archive Promotions" and "Delete OTPs" jobs to a robust Bull MQ runner via single click.
-4. **AI Drafting (Gemini)**: Reads your last 10 sent emails to extract your personal tone and generates immediate draft replies in your native voice directly into Gmail Drafts.
-5. **Smart Calendar Suggests**: Gemini-powered parsing detects meetings dynamically to help setup calendar blocks.
+## Key Features
+
+### 1. Advanced Mailbox Synchronization
+- **Historical Batch Sync**: A one-time, recursive background process that paginates through your entire Gmail history using Bull queues.
+- **Incremental Manual Refresh**: High-speed ingestion using `after:DATE` filters to fetch only new mail since your last session.
+- **Sync Control**: Full **Pause/Resume** functionality for historical scans directly from the dashboard.
+- **Chronological Accuracy**: Sorting is powered by Gmail's `internalDate` (millisecond arrival time) instead of unreliable email headers.
+
+### 2. Intelligent Dashboard & Analytics
+- **Dual-Metric Tracking**: Separate tracking for "Total in Gmail" vs. "Total Scanned" in TrueAuth.
+- **Deep Folder Insights**: Real-time counts for Unread, Drafts, Starred, and Priority items.
+- **Composition Analytics**: Interactive Chart.js donut charts showing your mailbox distribution (Spam, Promotions, OTPs, etc.).
+
+### 3. Smart Toolbox
+- **Subscription Manager**: Automatic extraction of `List-Unsubscribe` headers with 1-click opt-out.
+- **Automated Cleanups**: Atomic jobs to archive promotions, delete OTPs (older than 24h), and purge spam.
+- **AI Drafting (Gemini)**: Extracts your personal tone from sent mail to generate replies in your voice directly into your Gmail Drafts.
+- **Calendar Integration**: AI-driven event detection for 1-click calendar scheduling.
+
+### 4. Data Privacy & Control
+- **Purge My Data**: A nuclear option that permanently wipes all your emails, tokens, and logs from the TrueAuth database.
+- **OAuth Security**: Full session isolation using Supabase Auth and Google OAuth2.
 
 ## Prerequisites
 
-- Request a **Google Cloud OAuth Client**.
+- **Google Cloud Console**:
   - Enable *Gmail API* and *Google Calendar API*.
-  - Use Scopes: `https://www.googleapis.com/auth/gmail.modify`, `https://www.googleapis.com/auth/calendar.events`, `https://www.googleapis.com/auth/userinfo.email`
-- Create a **Supabase Project**.
-  - Head to Authentication -> Providers -> enable **Google** (using your google credentials).
-  - Copy the generated Supabase redirect URI into your Google Cloud Authorized redirect URIs.
-- **Docker & Docker Compose** installed locally.
+  - Configure OAuth screen and credentials.
+- **Supabase**:
+  - Enable Google Auth Provider.
+  - Set up PostgreSQL schema (see `supabase/migrations`).
+- **Redis Instance**: Required for the Bull MQ background workers.
 
-## Setup & Running
+## Setup & Running (Local)
 
-**1. Clone the environment variables**
-In `backend/`, copy the example keys, and ensure your keys are accurate:
-```bash
-# backend/.env
-SUPABASE_URL=http://localhost:54321
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-LLM_API_KEY=your-gemini-or-openai-key
-REDIS_URL=redis://redis:6379 
-```
+1. **Environment Config**:
+   ```bash
+   # Create backend/.env with:
+   SUPABASE_URL=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+   GOOGLE_CLIENT_ID=...
+   GOOGLE_CLIENT_SECRET=...
+   LLM_API_KEY=...
+   REDIS_URL=...
+   ```
 
-**2. Update Frontend Environment**
-Adjust the Supabase client inside `frontend/src/app/services/supabase.service.ts` to reflect your public anonymous key and URL.
+2. **Database Setup**:
+   Run the SQL files in `supabase/migrations/` in order (00000 to 00005) in your Supabase SQL Editor.
 
-**3. Initial Database Migration**
-Connect to your Supabase Postgres SQL UI or CLI and execute the layout defined dynamically in `supabase/migrations/00000_schema.sql` to generate the correct schema and audit tables.
+3. **Launch**:
+   ```bash
+   # Using Docker
+   docker-compose up --build -d
+   
+   # Or natively
+   ./start-local.sh
+   ```
 
-**4. Spin up the Stack via Docker Compose**
-Execute the following to orchestrate the backend, frontend, and Redis instances simultaneously in containers:
-```bash
-docker-compose up --build -d
-```
-
-**Alternatively: Run Natively (Without Docker)**
-If you prefer to run the Node.js and Angular servers natively on your machine (useful for active development):
-```bash
-./start-local.sh
-```
-*(This script will spin up Redis in the background but launch the Express and Angular servers natively using your local Node binaries).*
-
-**Access Points**:
-- **Application Frontend**: `http://localhost:4200`
-- **Backend API**: `http://localhost:3000`
-- **Redis Queue**: `localhost:6379`
-
-## Interacting
-- On `http://localhost:4200` hit `Sign in with Google`. The Google pop-up will appear.
-- Accept the permissions requested by Supabase; upon completion Supabase secures your Token inside Postgres.
-- Head to the Dashboard. Unload your inbox!
+## License
+MIT
