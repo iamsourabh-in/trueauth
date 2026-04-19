@@ -1,4 +1,4 @@
-import { Component, inject, DestroyRef } from '@angular/core';
+import { Component, inject, DestroyRef, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterOutlet } from '@angular/router';
 import { SupabaseService } from '../../services/supabase.service';
@@ -181,25 +181,25 @@ interface NavItem {
     .dash-content { flex: 1; overflow-y: auto; padding: 1.5rem; }
   `]
 })
-export class DashboardLayoutComponent {
-  router   = inject(Router);
+export class DashboardLayoutComponent implements OnInit {
+  router = inject(Router);
   supabase = inject(SupabaseService);
-  theme    = inject(ThemeService);
-  api      = inject(ApiService);
+  theme = inject(ThemeService);
+  api = inject(ApiService);
   private destroyRef = inject(DestroyRef);
 
-  email    = '';
-  initial  = '';
-  now      = new Date();
+  email = '';
+  initial = '';
+  now = new Date();
   collapsed = false;
 
   navItems: NavItem[] = [
-    { label: 'Overview',        route: '/dashboard/summary',       icon: 'layout' },
-    { label: 'Inbox',           route: '/dashboard/inbox',         icon: 'inbox' },
-    { label: 'Subscriptions',   route: '/dashboard/subscriptions', icon: 'bell' },
-    { label: 'Cleanup Rules',   route: '/dashboard/cleanup',       icon: 'trash-2' },
-    { label: 'AI Draft',        route: '/dashboard/draft',         icon: 'pen-box' },
-    { label: 'Calendar',        route: '/dashboard/calendar',      icon: 'calendar' },
+    { label: 'Overview', route: '/dashboard/summary', icon: 'layout' },
+    { label: 'Inbox', route: '/dashboard/inbox', icon: 'inbox' },
+    { label: 'Subscriptions', route: '/dashboard/subscriptions', icon: 'bell' },
+    { label: 'Cleanup Rules', route: '/dashboard/cleanup', icon: 'trash-2' },
+    { label: 'AI Draft', route: '/dashboard/draft', icon: 'pen-box' },
+    { label: 'Calendar', route: '/dashboard/calendar', icon: 'calendar' },
   ];
 
   get currentTitle() {
@@ -209,9 +209,17 @@ export class DashboardLayoutComponent {
   constructor() {
     setInterval(() => this.now = new Date(), 30_000);
     this.supabase.user.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(u => {
-      this.email   = u?.email ?? u?.user_metadata?.['email'] ?? '';
+      this.email = u?.email ?? u?.user_metadata?.['email'] ?? '';
       this.initial = this.email.charAt(0).toUpperCase();
     });
+  }
+
+  async ngOnInit() {
+    try {
+      await this.api.syncGoogleTokensFromSession();
+    } catch (e) {
+      console.error('Failed to sync Google tokens from session', e);
+    }
   }
 
   async purgeData() {
