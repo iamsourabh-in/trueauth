@@ -37,9 +37,12 @@ This guide outlines how to deploy the entire TrueAuth stack using free-tier serv
   - Connect your GitHub repository.
   - Root Directory: `frontend`.
   - **Environment Variables**:
-    - Update `src/environments/environment.prod.ts` with your Supabase keys.
-    - Set `apiUrl` to your Render backend URL (e.g., `https://trueauth-api.onrender.com/api`).
-  - Vercel automatically detects Angular and builds it.
+    - Add these variables in the **Vercel Project Settings > Environment Variables** UI:
+      - `SUPABASE_URL`: Your production Supabase project URL.
+      - `SUPABASE_ANON_KEY`: Your production Supabase anonymous key.
+      - `API_URL`: Your Render backend URL (e.g., `https://trueauth-api.onrender.com/api`).
+    - **How it works**: I've added a `set-env.js` script that runs automatically during the Vercel build. It reads these variables and generates the `src/environments/environment.prod.ts` file for you, so your secrets are never committed to Git.
+  - Vercel automatically detects Angular and builds it using `npm run build`.
 
 ## 5. Google Cloud Configuration
 Ensure that your **Authorized JavaScript Origins** and **Authorized Redirect URIs** are updated in the [Google Cloud Console](https://console.cloud.google.com/):
