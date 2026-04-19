@@ -14,6 +14,15 @@ import { draftRouter } from './routes/draft';
 import { calendarRouter } from './routes/calendar';
 import { authRouter } from './routes/auth';
 
+
+declare global {
+  namespace Express {
+    interface Request {
+      requestId?: string;
+    }
+  }
+}
+
 dotenv.config();
 
 const app = express();

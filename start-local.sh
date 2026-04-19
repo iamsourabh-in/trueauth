@@ -11,8 +11,5 @@ echo "🔌 Backend: http://localhost:3000"
 echo "🛑 Press Ctrl+C to stop everything"
 echo "============================================================"
 
-# Use concurrently to properly multiplex the terminal streams 
-# so Angular (ng serve) doesn't clear the backend's logs from the screen
-npx concurrently -k -p "[{name}]" -n "BACKEND,FRONTEND" -c "cyan.bold,yellow.bold" \
-  "cd backend && npx ts-node src/index.ts" \
-  "cd frontend && npx ng serve"
+# Use npm run dev (concurrently installed as root dev dep)
+npm run dev

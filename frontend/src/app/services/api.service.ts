@@ -11,7 +11,7 @@ export class ApiService {
   http = inject(HttpClient);
   supabase = inject(SupabaseService);
 
-  // The backend base URL
+  // The backend base URL - must include /api
   baseUrl = 'http://localhost:3000/api';
 
   async getHeaders() {
@@ -33,31 +33,63 @@ export class ApiService {
     const headers = await this.getHeaders();
     const expiresAt =
       session.expires_at != null ? new Date(session.expires_at * 1000).toISOString() : null;
-    await firstValueFrom(
-      this.http.post(
-        `${this.baseUrl}/auth/sync-google-tokens`,
-        {
-          provider_token: session.provider_token,
-          provider_refresh_token: session.provider_refresh_token ?? null,
-          expires_at: expiresAt
-        },
-        { headers }
-      )
-    );
+    
+    console.info('[API] POST /auth/sync-google-tokens');
+    try {
+      await firstValueFrom(
+        this.http.post(
+          `${this.baseUrl}/auth/sync-google-tokens`,
+          {
+            provider_token: session.provider_token,
+            provider_refresh_token: session.provider_refresh_token ?? null,
+            expires_at: expiresAt
+          },
+          { headers }
+        )
+      );
+      console.info('[API] POST /auth/sync-google-tokens - Success');
+    } catch (error) {
+      console.error('[API] POST /auth/sync-google-tokens - Failed', error);
+      throw error;
+    }
   }
 
   async getMailboxStatus() {
+    console.info('[API] GET /mailbox/status');
     const headers = await this.getHeaders();
-    return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/status`, { headers }));
+    try {
+      const res = await firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/status`, { headers }));
+      console.info('[API] GET /mailbox/status - Success', res);
+      return res;
+    } catch (error) {
+      console.error('[API] GET /mailbox/status - Failed', error);
+      throw error;
+    }
   }
 
   async getSubscriptions() {
+    console.info('[API] GET /subscriptions');
     const headers = await this.getHeaders();
-    return firstValueFrom(this.http.get<any>(`${this.baseUrl}/subscriptions`, { headers }));
+    try {
+      const res = await firstValueFrom(this.http.get<any>(`${this.baseUrl}/subscriptions`, { headers }));
+      console.info('[API] GET /subscriptions - Success', res);
+      return res;
+    } catch (error) {
+      console.error('[API] GET /subscriptions - Failed', error);
+      throw error;
+    }
   }
 
   async triggerCleanup(action: string) {
+    console.info(`[API] POST /cleanup/trigger payload: ${action}`);
     const headers = await this.getHeaders();
-    return firstValueFrom(this.http.post<any>(`${this.baseUrl}/cleanup/trigger`, { action }, { headers }));
+    try {
+      const res = await firstValueFrom(this.http.post<any>(`${this.baseUrl}/cleanup/trigger`, { action }, { headers }));
+      console.info(`[API] POST /cleanup/trigger - Success for ${action}`, res);
+      return res;
+    } catch (error) {
+      console.error(`[API] POST /cleanup/trigger - Failed for ${action}`, error);
+      throw error;
+    }
   }
 }
