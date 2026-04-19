@@ -193,7 +193,11 @@ authRouter.post('/purge', requireAuth, async (req: AuthRequest, res) => {
     const { error: cErr } = await supabase.from('cleanup_log').delete().eq('user_id', userId);
     if (cErr) logger.error('Purge: failed to delete cleanup sessions', { userId, error: cErr });
 
-    // 4. Delete tokens (most critical for access)
+    // 4. Delete sync logs
+    const { error: slErr } = await supabase.from('sync_log').delete().eq('user_id', userId);
+    if (slErr) logger.error('Purge: failed to delete sync logs', { userId, error: slErr });
+
+    // 5. Delete tokens (most critical for access)
     const { error: tErr } = await supabase.from('user_tokens').delete().eq('user_id', userId);
     if (tErr) logger.error('Purge: failed to delete tokens', { userId, error: tErr });
 
