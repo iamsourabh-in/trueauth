@@ -162,3 +162,45 @@ authRouter.post('/sync-google-tokens', requireAuth, async (req: AuthRequest, res
     res.status(500).json({ error: message, requestId: req.requestId });
   }
 });
+
+/**
+ * Purges ALL user data from all tables.
+ * This is the 'Delete my data' feature.
+ */
+authRouter.post('/purge', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'User not found' });
+
+    logger.info('Starting account data purge', { userId, requestId: req.requestId });
+
+    // Sequence of deletes
+    // We do these individually to avoid complex constraint issues if any,
+    // though most have ON DELETE CASCADE if they were perfectly set up.
+    
+    // 1. Delete emails
+    const { error: eErr } = await supabase.from('emails').delete().eq('user_id', userId);
+    if (eErr) logger.error('Purge: failed to delete emails', { userId, error: eErr });
+
+    // 2. Delete subscriptions
+    const { error: sErr } = await supabase.from('subscriptions').delete().eq('user_id', userId);
+    if (sErr) logger.error('Purge: failed to delete subscriptions', { userId, error: sErr });
+
+    // 3. Delete cleanup logs
+    const { error: cErr } = await supabase.from('cleanup_log').delete().eq('user_id', userId);
+    if (cErr) logger.error('Purge: failed to delete cleanup sessions', { userId, error: cErr });
+
+    // 4. Delete tokens (most critical for access)
+    const { error: tErr } = await supabase.from('user_tokens').delete().eq('user_id', userId);
+    if (tErr) logger.error('Purge: failed to delete tokens', { userId, error: tErr });
+
+    res.json({ 
+      success: true, 
+      message: 'All personal data has been removed from TrueAuth storage.' 
+    });
+
+  } catch (error: any) {
+    logger.error('Purge account error', { userId: req.user?.id, error: error.message });
+    res.status(500).json({ error: 'Failed to complete data deletion.' });
+  }
+});

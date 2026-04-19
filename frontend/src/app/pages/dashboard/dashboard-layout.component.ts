@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterOutlet } from '@angular/router';
 import { SupabaseService } from '../../services/supabase.service';
 import { ThemeService } from '../../services/theme.service';
+import { ApiService } from '../../services/api.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LucideAngularModule } from 'lucide-angular';
 
@@ -65,7 +66,15 @@ interface NavItem {
               {{ theme.theme() === 'dark' ? 'Light mode' : 'Dark mode' }}
             </span>
           </button>
-          <button class="nav-item danger" (click)="signOut()" title="Sign out">
+          
+          <button class="nav-item danger" (click)="purgeData()" title="Purge My Data" *ngIf="!collapsed">
+            <span class="nav-icon">
+              <lucide-icon name="user-x" [size]="18"></lucide-icon>
+            </span>
+            <span class="nav-label">Purge My Data</span>
+          </button>
+
+          <button class="nav-item" (click)="signOut()" title="Sign out">
             <span class="nav-icon">
               <lucide-icon name="log-out" [size]="18"></lucide-icon>
             </span>
@@ -176,6 +185,7 @@ export class DashboardLayoutComponent {
   router   = inject(Router);
   supabase = inject(SupabaseService);
   theme    = inject(ThemeService);
+  api      = inject(ApiService);
   private destroyRef = inject(DestroyRef);
 
   email    = '';
@@ -202,6 +212,20 @@ export class DashboardLayoutComponent {
       this.email   = u?.email ?? u?.user_metadata?.['email'] ?? '';
       this.initial = this.email.charAt(0).toUpperCase();
     });
+  }
+
+  async purgeData() {
+    if (!confirm('Are you sure you want to permanently delete ALL your data from TrueAuth? This includes all synced emails, subscriptions, and logs. This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await this.api.purgeData();
+      alert('Your data has been successfully deleted. You will now be signed out.');
+      await this.signOut();
+    } catch (e) {
+      alert('Failed to delete data. Please try again later.');
+    }
   }
 
   async signOut() {

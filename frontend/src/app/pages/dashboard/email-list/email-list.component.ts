@@ -1,5 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { LucideAngularModule } from 'lucide-angular';
 
@@ -27,15 +28,39 @@ import { LucideAngularModule } from 'lucide-angular';
 
       <!-- Email List -->
       <div class="email-list" *ngIf="!loading || emails.length > 0">
-        <div class="email-item" *ngFor="let email of emails; let i = index" [style.animation-delay]="i * 20 + 'ms'">
+        <div 
+          class="email-item" 
+          *ngFor="let email of emails; let i = index" 
+          [style.animation-delay]="i * 20 + 'ms'"
+          [class.menu-open]="activeMenuId === email.message_id"
+          [style.z-index]="activeMenuId === email.message_id ? 1000 : 1"
+        >
           <div class="email-avatar">{{ email.sender.charAt(0).toUpperCase() }}</div>
           <div class="email-main">
             <div class="email-top">
-              <span class="email-sender">{{ email.sender }}</span>
+              <span class="email-sender" [title]="email.sender">{{ email.sender }}</span>
               <span class="email-date">{{ email.received_at | date:'MMM d' }}</span>
             </div>
             <div class="email-subject">{{ email.subject }}</div>
             <div class="email-snippet">{{ email.snippet }}</div>
+          </div>
+          
+          <div class="email-actions">
+             <button class="more-btn" (click)="toggleMenu($event, email.message_id)" title="Options">
+                <lucide-icon name="more-vertical" [size]="18"></lucide-icon>
+             </button>
+
+             <!-- Dropdown Menu -->
+             <div class="dropdown-menu" *ngIf="activeMenuId === email.message_id" (click)="$event.stopPropagation()">
+                <button class="menu-item" (click)="goToDraft(email.thread_id)">
+                  <lucide-icon name="pen-box" [size]="14"></lucide-icon>
+                  <span>AI Draft Reply</span>
+                </button>
+                <button class="menu-item danger" (click)="deleteEmail(email.message_id)">
+                  <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+                  <span>Delete Email</span>
+                </button>
+             </div>
           </div>
         </div>
 
@@ -62,27 +87,63 @@ import { LucideAngularModule } from 'lucide-angular';
     .skeleton-row { height: 80px; background: var(--surface2); border-radius: 0.75rem; margin-bottom: 0.75rem; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-    .email-list { display: flex; flex-direction: column; gap: 0.75rem; }
-    .email-item { display: flex; gap: 1rem; padding: 1.1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 0.875rem; cursor: pointer; transition: all 0.2s; animation: slideUp 0.3s ease both; }
+    .email-list { display: flex; flex-direction: column; gap: 0.75rem; overflow: visible; }
+    .email-item { display: flex; gap: 1rem; padding: 1.1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 0.875rem; cursor: pointer; transition: all 0.2s; animation: slideUp 0.3s ease both; overflow: visible; align-items: center; position: relative; }
     .email-item:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--card-shadow); }
+    .email-item.menu-open { border-color: var(--accent); box-shadow: var(--card-shadow); }
     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     .email-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-subtle); color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
     .email-main { flex: 1; min-width: 0; }
     .email-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
-    .email-sender { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+    .email-sender { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
     .email-date { font-size: 0.75rem; color: var(--text-secondary); }
     .email-subject { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .email-snippet { font-size: 0.85rem; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .email-actions { flex-shrink: 0; position: relative; }
+    
+    /* Fixed visibility: removed opacity: 0 */
+    .more-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--surface2); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+    .email-item:hover .more-btn { color: var(--accent); border-color: var(--accent); }
+    .email-item.menu-open .more-btn { background: var(--accent); color: white; border-color: var(--accent); }
+
+    .dropdown-menu { 
+      position: absolute; top: 40px; right: 0; 
+      background: var(--surface); border: 1px solid var(--border); 
+      border-radius: 0.75rem; z-index: 10000 !important; min-width: 170px; padding: 0.4rem;
+      display: flex; flex-direction: column; gap: 2px;
+      animation: fadeIn 0.1s ease-out;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.2);
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .menu-item { 
+      display: flex; align-items: center; gap: 0.6rem; 
+      padding: 0.6rem 0.8rem; border-radius: 0.5rem; 
+      border: none; background: none; color: var(--text-primary); 
+      font-size: 0.85rem; font-weight: 500; cursor: pointer; 
+      transition: all 0.15s; width: 100%; text-align: left;
+    }
+    .menu-item:hover { background: var(--surface2); }
+    .menu-item.danger { color: var(--danger); }
+    .menu-item.danger:hover { background: rgba(239,68,68,0.08); }
 
     .empty-state { padding: 4rem 2rem; text-align: center; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
   `]
 })
 export class EmailListComponent implements OnInit {
   api = inject(ApiService);
+  router = inject(Router);
   loading = true;
   syncing = false;
   emails: any[] = [];
+  activeMenuId: string | null = null;
+
+  @HostListener('document:click')
+  closeMenus() {
+    this.activeMenuId = null;
+  }
 
   async ngOnInit() {
     await this.load();
@@ -92,7 +153,7 @@ export class EmailListComponent implements OnInit {
     this.loading = true;
     try {
       const res = await this.api.getEmails();
-      this.emails = res.emails || [];
+      this.emails = (res.emails || []).slice(0, 100);
     } catch { }
     finally { this.loading = false; }
   }
@@ -104,5 +165,27 @@ export class EmailListComponent implements OnInit {
       await this.load();
     } catch { }
     finally { this.syncing = false; }
+  }
+
+  toggleMenu(event: Event, id: string) {
+    event.stopPropagation();
+    this.activeMenuId = this.activeMenuId === id ? null : id;
+  }
+
+  goToDraft(threadId: string) {
+    this.activeMenuId = null;
+    this.router.navigate(['/dashboard/draft'], { queryParams: { threadId } });
+  }
+
+  async deleteEmail(id: string) {
+    const index = this.emails.findIndex(e => e.message_id === id);
+    if (index > -1) {
+        const removed = this.emails.splice(index, 1)[0];
+        try {
+            await this.api.deleteMessage(id);
+        } catch (e) {
+            this.emails.splice(index, 0, removed);
+        }
+    }
   }
 }

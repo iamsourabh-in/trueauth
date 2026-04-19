@@ -106,6 +106,11 @@ export class CleanupPageComponent {
       desc: 'Archives bulk/newsletter mail that you haven\'t opened in 30 days.',
       color: 'linear-gradient(135deg,#10b981,#06b6d4)', icon: 'check-circle'
     },
+    {
+      id: '4', label: 'Purge Spam', action: 'delete-spam',
+      desc: 'Permanently trashes all emails found in your Spam folder.',
+      color: 'linear-gradient(135deg,#ef4444,#991b1b)', icon: 'shield-alert'
+    },
   ];
 
   async run(r: Rule) {

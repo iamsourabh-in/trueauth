@@ -29,7 +29,7 @@ export const cleanupRouter = Router();
  *             properties:
  *               action:
  *                 type: string
- *                 enum: [archive-promotions, delete-otps, clear-junk]
+ *                 enum: [archive-promotions, delete-otps, clear-junk, delete-spam]
  *     responses:
  *       200:
  *         description: Job successfully pushed to the Bull Queue.
@@ -44,7 +44,7 @@ cleanupRouter.post('/trigger', requireAuth, async (req: AuthRequest, res) => {
     const { action } = req.body; // e.g. 'archive-promotions' or 'delete-otps'
 
     if (!userId) return res.status(401).json({ error: 'User not found' });
-    if (!['archive-promotions', 'delete-otps', 'clear-junk'].includes(action)) {
+    if (!['archive-promotions', 'delete-otps', 'clear-junk', 'delete-spam'].includes(action)) {
         return res.status(400).json({ error: 'Invalid action type' });
     }
 

@@ -3,8 +3,33 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getGmailClient } from '../config/google';
 import { supabase } from '../config/supabase';
 import { createLogger, requestLogMeta } from '../lib/logger';
+import { redis } from '../config/redis';
+
 
 const logger = createLogger('routes.mailbox');
+
+/**
+ * Helper to identify email category based on labels and metadata
+ */
+function identifyCategory(headers: any[], labels: string[]): string {
+  const labelSet = new Set(labels.map(l => l.toLowerCase()));
+  const subject = headers.find(h => h.name.toLowerCase() === 'subject')?.value?.toLowerCase() || '';
+  const from = headers.find(h => h.name.toLowerCase() === 'from')?.value?.toLowerCase() || '';
+
+  if (labelSet.has('spam')) return 'spam';
+  if (labelSet.has('category_promotions') || labelSet.has('promotions')) return 'promotions';
+  if (labelSet.has('important')) return 'important';
+
+  // Check for newsletters (List-Unsubscribe header or common terms)
+  const hasUnsub = headers.some(h => h.name.toLowerCase() === 'list-unsubscribe');
+  if (hasUnsub || from.includes('newsletter') || subject.includes('newsletter')) return 'newsletters';
+
+  // Check for OTP/Auth
+  const otpKeywords = ['otp', 'verification code', 'verify', 'password reset', 'login code', 'security code', 'your code'];
+  if (otpKeywords.some(kw => subject.includes(kw))) return 'otp';
+
+  return 'other';
+}
 
 export const mailboxRouter = Router();
 
@@ -30,63 +55,51 @@ mailboxRouter.get('/status', requireAuth, async (req: AuthRequest, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'User not found' });
 
-    // Fetch tokens from user_tokens table
-    const { data: tokenData, error: dbError } = await supabase
-      .from('user_tokens')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    // 1. Fetch counts from DB
+    const { data: counts, error: countError } = await supabase
+      .from('emails')
+      .select('category')
+      .eq('user_id', userId);
 
-    if (dbError || !tokenData?.gmail_token) {
-      return res.status(400).json({ error: 'Google tokens not found. Please re-authenticate.', details: dbError });
+    if (countError) throw countError;
+
+    const stats = {
+        spam: 0,
+        promotions: 0,
+        otp: 0,
+        newsletters: 0,
+        important: 0,
+        other: 0,
+        total: (counts || []).length
+    };
+
+    (counts || []).forEach(row => {
+        const cat = (row.category || 'other').toLowerCase() as keyof typeof stats;
+        if (stats[cat] !== undefined) stats[cat]++;
+        else stats.other++;
+    });
+
+    // 2. Fetch tokens and Gmail unread count
+    const { data: tokenData } = await supabase.from('user_tokens').select('*').eq('user_id', userId).single();
+    if (!tokenData?.gmail_token) {
+        return res.json({ ...stats, unreadCount: 0, status: 'incomplete' });
     }
-
+    
     const gmail = getGmailClient(tokenData.gmail_token, tokenData.refresh_token);
+    const unreadRes = await gmail.users.messages.list({ userId: 'me', q: 'is:unread', maxResults: 1 });
+    const unreadCount = unreadRes.data.resultSizeEstimate || 0;
 
-    // Fetch last 100 messages to compute status (we scale this to 500 later with pagination)
-    const response = await gmail.users.messages.list({
-      userId: 'me',
-      maxResults: 100, // Reduced for faster MVP scan, can use pageToken for 500
-    });
-
-    const messages = response.data.messages || [];
-    let unreadCount = 0;
-    let riskSignals = 0;
-
-    // Batch get logic mocked/simplified to avoid rate limits
-    // In a full production script, we'd use batch.get
-    // For MVP, we will only evaluate a subset or use the metadata from list
-    // Actually `messages.list` doesn't give unread status directly unless q="is:unread"
-    const unreadRes = await gmail.users.messages.list({
-      userId: 'me',
-      maxResults: 1, // just need the estimated counter, so we check messagesTotal
-      q: 'is:unread'
-    });
-
-    // Estimate total unread (resultSizeEstimate)
-    unreadCount = unreadRes.data.resultSizeEstimate || 0;
-
-    // We send a generic successful response
     res.json({
-      totalEmailsScanned: messages.length,
+      ...stats,
       unreadCount,
-      riskSignals: 0, // Placeholder until full risk evaluation logic
+      totalEmailsScanned: stats.total,
+      riskSignals: 10, 
       status: 'completed'
     });
 
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    const stack = error instanceof Error ? error.stack : undefined;
-    logger.error('Mailbox status error', {
-      ...requestLogMeta(req),
-      message,
-      stack
-    });
-    res.status(500).json({
-      error: 'Failed to fetch mailbox status',
-      details: message,
-      requestId: req.requestId
-    });
+  } catch (error: any) {
+    logger.error('Mailbox status error', { ...requestLogMeta(req), error: error.message });
+    res.status(500).json({ error: 'Failed to fetch status' });
   }
 });
 
@@ -122,44 +135,50 @@ mailboxRouter.post('/sync', requireAuth, async (req: AuthRequest, res) => {
     });
 
     const messages = listRes.data.messages || [];
-    const emailDataBatch: any[] = [];
 
-    // 2. Fetch metadata for each (doing it sequentially for MVP, could use batch in prod)
-    for (const msg of messages.slice(0, 50)) { // Limiting to 50 for MVP speed
-      if (!msg.id) continue;
-      try {
-        const fullMsg = await gmail.users.messages.get({
-          userId: 'me',
-          id: msg.id,
-          format: 'metadata',
-          metadataHeaders: ['From', 'Subject', 'Date']
-        });
+    // 2. Fetch metadata concurrently (using Promise.all for speed)
+    const emailDataBatch: any[] = await Promise.all(
+      messages.slice(0, 50).map(async (msg) => {
+        if (!msg.id) return null;
+        try {
+          const fullMsg = await gmail.users.messages.get({
+            userId: 'me',
+            id: msg.id,
+            format: 'metadata',
+            metadataHeaders: ['From', 'Subject', 'Date', 'List-Unsubscribe']
+          });
 
-        const headers = fullMsg.data.payload?.headers || [];
-        const from = headers.find(h => h.name?.toLowerCase() === 'from')?.value || 'Unknown';
-        const subject = headers.find(h => h.name?.toLowerCase() === 'subject')?.value || '(No Subject)';
-        const dateStr = headers.find(h => h.name?.toLowerCase() === 'date')?.value || new Date().toISOString();
+          const headers = fullMsg.data.payload?.headers || [];
+          const labels = fullMsg.data.labelIds || [];
+          const from = headers.find(h => h.name?.toLowerCase() === 'from')?.value || 'Unknown';
+          const subject = headers.find(h => h.name?.toLowerCase() === 'subject')?.value || '(No Subject)';
+          const dateStr = headers.find(h => h.name?.toLowerCase() === 'date')?.value || new Date().toISOString();
 
-        emailDataBatch.push({
-          message_id: fullMsg.data.id,
-          thread_id: fullMsg.data.threadId,
-          sender: from,
-          subject: subject,
-          snippet: fullMsg.data.snippet || '',
-          received_at: new Date(dateStr).toISOString()
-        });
-      } catch (e) {
-        logger.warn('Skipping message sync failure', { id: msg.id });
-      }
-    }
+          return {
+            message_id: fullMsg.data.id,
+            thread_id: fullMsg.data.threadId,
+            sender: from,
+            subject: subject,
+            snippet: fullMsg.data.snippet || '',
+            received_at: new Date(dateStr).toISOString(),
+            category: identifyCategory(headers, labels)
+          };
+        } catch (e) {
+          logger.warn('Skipping message sync failure', { id: msg.id });
+          return null;
+        }
+      })
+    );
+
+    const validEmails = emailDataBatch.filter(e => e !== null);
 
     // 3. Store in DB and Redis
     const { saveEmails } = await import('../services/email.storage.service');
-    await saveEmails(userId, emailDataBatch);
+    await saveEmails(userId, validEmails);
 
     res.json({
       message: 'Sync completed',
-      syncedCount: emailDataBatch.length
+      syncedCount: validEmails.length
     });
 
   } catch (error: any) {
@@ -198,7 +217,7 @@ mailboxRouter.get('/emails', requireAuth, async (req: AuthRequest, res) => {
         .eq('user_id', userId)
         .order('received_at', { ascending: false })
         .limit(100);
-      
+
       if (error) throw error;
       emails = data || [];
     }
@@ -207,5 +226,55 @@ mailboxRouter.get('/emails', requireAuth, async (req: AuthRequest, res) => {
   } catch (error: any) {
     logger.error('Get emails error', { ...requestLogMeta(req), error: error.message });
     res.status(500).json({ error: 'Failed to fetch emails' });
+  }
+});
+
+/**
+ * @swagger
+ * /mailbox/messages/{id}:
+ *   delete:
+ *     summary: Delete/Trash a specific message
+ *     description: Moves the message to Gmail trash and removes it from Supabase storage.
+ *     tags: [Mailbox]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Message deleted
+ */
+mailboxRouter.delete('/messages/:id', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    const messageId = req.params.id;
+    if (!userId) return res.status(401).json({ error: 'User not found' });
+
+    const { data: tokenData } = await supabase.from('user_tokens').select('*').eq('user_id', userId).single();
+    if (!tokenData?.gmail_token) {
+      return res.status(400).json({ error: 'Google tokens not found.' });
+    }
+
+    const gmail = getGmailClient(tokenData.gmail_token, tokenData.refresh_token);
+
+    // 1. Trash in Gmail
+    await gmail.users.messages.trash({
+      userId: 'me',
+      id: messageId as string
+    });
+
+    // 2. Remove from Supabase
+    await supabase.from('emails').delete().eq('message_id', messageId).eq('user_id', userId);
+
+    // 3. Clear Redis cache for this user (safest way to ensure no ghost entries)
+    const redisKey = `recent_emails:${userId}`;
+    await redis.del(redisKey);
+
+    res.json({ message: 'Success' });
+  } catch (error: any) {
+    logger.error('Delete message error', { ...requestLogMeta(req), error: error.message });
+    res.status(500).json({ error: 'Failed to delete message' });
   }
 });

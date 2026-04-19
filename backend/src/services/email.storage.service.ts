@@ -12,6 +12,7 @@ export interface EmailData {
   snippet: string;
   body_plain?: string;
   received_at: string;
+  category?: string;
 }
 
 export const saveEmails = async (userId: string, emails: EmailData[]) => {

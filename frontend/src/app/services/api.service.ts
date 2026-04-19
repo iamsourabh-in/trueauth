@@ -40,10 +40,14 @@ export class ApiService {
     return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/status`, { headers }));
   }
 
-  async getSubscriptions(forceRefresh = false) {
-    const url = forceRefresh ? `${this.baseUrl}/subscriptions?refresh=true` : `${this.baseUrl}/subscriptions`;
+  async getSubscriptions(status: string = 'active') {
     const headers = await this.getHeaders();
-    return firstValueFrom(this.http.get<any>(url, { headers }));
+    return firstValueFrom(this.http.get<any>(`${this.baseUrl}/subscriptions?status=${status}`, { headers }));
+  }
+
+  async markAsUnsubscribed(id: string) {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.post<any>(`${this.baseUrl}/subscriptions/unsubscribe`, { id }, { headers }));
   }
 
   async triggerCleanup(action: string) {
@@ -74,5 +78,15 @@ export class ApiService {
   async getEmails() {
     const headers = await this.getHeaders();
     return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/emails`, { headers }));
+  }
+
+  async deleteMessage(messageId: string) {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.delete<any>(`${this.baseUrl}/mailbox/messages/${messageId}`, { headers }));
+  }
+
+  async purgeData() {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.post<any>(`${this.baseUrl}/auth/purge`, {}, { headers }));
   }
 }

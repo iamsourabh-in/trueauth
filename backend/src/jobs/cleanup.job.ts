@@ -57,8 +57,35 @@ export const processCleanup = async (job: Job) => {
         });
       }
     } else if (action === 'delete-otps') {
-      // Search for older than 1 hr, containing 6 digits mock q
       const res = await gmail.users.messages.list({ userId: 'me', q: 'older_than:1h OTP OR verification OR code', maxResults: 50 });
+      const msgs = res.data.messages || [];
+
+      for (const msg of msgs) {
+        if (!msg.id) continue;
+        await gmail.users.messages.trash({ userId: 'me', id: msg.id });
+        await supabase.from('cleanup_log').insert({
+          user_id: userId,
+          action_type: action,
+          thread_id: msg.threadId,
+          status: 'completed'
+        });
+      }
+    } else if (action === 'delete-spam') {
+      const res = await gmail.users.messages.list({ userId: 'me', q: 'in:spam', maxResults: 100 });
+      const msgs = res.data.messages || [];
+
+      for (const msg of msgs) {
+        if (!msg.id) continue;
+        await gmail.users.messages.trash({ userId: 'me', id: msg.id });
+        await supabase.from('cleanup_log').insert({
+          user_id: userId,
+          action_type: action,
+          thread_id: msg.threadId,
+          status: 'completed'
+        });
+      }
+    } else if (action === 'clear-junk') {
+      const res = await gmail.users.messages.list({ userId: 'me', q: 'label:junk OR "unsubscribe" older_than:30d', maxResults: 100 });
       const msgs = res.data.messages || [];
 
       for (const msg of msgs) {
