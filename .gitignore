@@ -52,3 +52,4 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+frontend/src/environments/environment.prod.ts
