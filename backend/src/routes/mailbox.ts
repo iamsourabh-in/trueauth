@@ -159,7 +159,7 @@ mailboxRouter.post('/sync', requireAuth, async (req: AuthRequest, res) => {
           const headers = detail.data.payload?.headers || [];
           const labels = detail.data.labelIds || [];
           const internalDate = detail.data.internalDate;
-          
+
           return {
             message_id: msg.id,
             thread_id: msg.threadId || '',
@@ -239,10 +239,10 @@ mailboxRouter.get('/emails', requireAuth, async (req: AuthRequest, res) => {
 
     if (error) throw error;
     const emails = data || [];
-    
-    res.json({ 
-      emails, 
-      page, 
+
+    res.json({
+      emails,
+      page,
       total: count,
       hasMore: (offset + emails.length) < (count || 0)
     });
@@ -290,31 +290,31 @@ mailboxRouter.get('/messages/:id', requireAuth, async (req: AuthRequest, res) =>
 
     const gmail = getGmailClient(tokenData.gmail_token, tokenData.refresh_token);
     const detail: any = await gmail.users.messages.get({
-        userId: 'me', id: messageId, format: 'full'
+      userId: 'me', id: messageId, format: 'full'
     } as any);
 
     // Parse body
     let body = '';
     const payload = detail.data.payload;
     if (payload?.parts) {
-        const part = payload.parts.find((p: any) => p.mimeType === 'text/plain') || payload.parts[0];
-        if (part?.body?.data) {
-            body = Buffer.from(part.body.data, 'base64').toString();
-        }
+      const part = payload.parts.find((p: any) => p.mimeType === 'text/plain') || payload.parts[0];
+      if (part?.body?.data) {
+        body = Buffer.from(part.body.data, 'base64').toString();
+      }
     } else if (payload?.body?.data) {
-        body = Buffer.from(payload.body.data, 'base64').toString();
+      body = Buffer.from(payload.body.data, 'base64').toString();
     }
 
     const headers = payload?.headers || [];
     const emailData = {
-        message_id: detail.data.id as string,
-        thread_id: detail.data.threadId as string,
-        sender: headers.find((h: any) => h.name?.toLowerCase() === 'from')?.value,
-        subject: headers.find((h: any) => h.name?.toLowerCase() === 'subject')?.value,
-        received_at: new Date(parseInt(detail.data.internalDate || '0')).toISOString(),
-        body: body || detail.data.snippet || '',
-        snippet: detail.data.snippet,
-        labels: detail.data.labelIds
+      message_id: detail.data.id as string,
+      thread_id: detail.data.threadId as string,
+      sender: headers.find((h: any) => h.name?.toLowerCase() === 'from')?.value,
+      subject: headers.find((h: any) => h.name?.toLowerCase() === 'subject')?.value,
+      received_at: new Date(parseInt(detail.data.internalDate || '0')).toISOString(),
+      body: body || detail.data.snippet || '',
+      snippet: detail.data.snippet,
+      labels: detail.data.labelIds
     };
 
     // 3. Optional: Sync back to DB so it's there next time
@@ -340,71 +340,71 @@ mailboxRouter.get('/messages/:id', requireAuth, async (req: AuthRequest, res) =>
  * AI Analysis for a single email
  */
 mailboxRouter.post('/messages/:id/analyze', requireAuth, async (req: AuthRequest, res) => {
-    try {
-        const userId = req.user?.id;
-        const messageId = req.params.id;
-        if (!userId) return res.status(401).json({ error: 'User not found' });
+  try {
+    const userId = req.user?.id;
+    const messageId = req.params.id;
+    if (!userId) return res.status(401).json({ error: 'User not found' });
 
-        // 1. Get email content (either from DB or Gmail)
-        let { data: email } = await supabase
-            .from('emails')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('message_id', messageId)
-            .single();
+    // 1. Get email content (either from DB or Gmail)
+    let { data: email } = await supabase
+      .from('emails')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('message_id', messageId)
+      .single();
 
-        if (!email || !email.body_plain) {
-            // Need to fetch and save first if not exists
-            const { data: tokenData } = await supabase.from('user_tokens').select('*').eq('user_id', userId).single();
-            const gmail = getGmailClient(tokenData.gmail_token, tokenData.refresh_token);
-            const detail: any = await gmail.users.messages.get({ userId: 'me', id: messageId, format: 'full' } as any);
-            
-            let body = '';
-            const payload = detail.data.payload;
-            if (payload?.parts) {
-                const part = payload.parts.find((p: any) => p.mimeType === 'text/plain') || payload.parts[0];
-                if (part?.body?.data) body = Buffer.from(part.body.data, 'base64').toString();
-            } else if (payload?.body?.data) {
-                body = Buffer.from(payload.body.data, 'base64').toString();
-            }
+    if (!email || !email.body_plain) {
+      // Need to fetch and save first if not exists
+      const { data: tokenData } = await supabase.from('user_tokens').select('*').eq('user_id', userId).single();
+      const gmail = getGmailClient(tokenData.gmail_token, tokenData.refresh_token);
+      const detail: any = await gmail.users.messages.get({ userId: 'me', id: messageId, format: 'full' } as any);
 
-            const headers = payload?.headers || [];
-            email = {
-                user_id: userId,
-                message_id: messageId,
-                thread_id: detail.data.threadId,
-                sender: headers.find((h: any) => h.name?.toLowerCase() === 'from')?.value,
-                subject: headers.find((h: any) => h.name?.toLowerCase() === 'subject')?.value,
-                body_plain: body,
-                snippet: detail.data.snippet,
-                received_at: new Date(parseInt(detail.data.internalDate || '0')).toISOString()
-            };
-            await supabase.from('emails').upsert(email, { onConflict: 'message_id' });
-        }
+      let body = '';
+      const payload = detail.data.payload;
+      if (payload?.parts) {
+        const part = payload.parts.find((p: any) => p.mimeType === 'text/plain') || payload.parts[0];
+        if (part?.body?.data) body = Buffer.from(part.body.data, 'base64').toString();
+      } else if (payload?.body?.data) {
+        body = Buffer.from(payload.body.data, 'base64').toString();
+      }
 
-        // 2. Perform AI Analysis
-        const analysis = await analyzeEmailWithAI({
-            subject: email.subject || '',
-            sender: email.sender || '',
-            body: email.body_plain || ''
-        });
-
-        if (analysis) {
-            await supabase.from('emails')
-                .update({ 
-                    category: analysis.category,
-                    ai_metadata: analysis 
-                })
-                .eq('message_id', messageId);
-            
-            res.json({ success: true, analysis });
-        } else {
-            res.status(500).json({ error: 'AI Analysis failed' });
-        }
-    } catch (error: any) {
-        logger.error('Analyze email error', { error: error.message });
-        res.status(500).json({ error: 'Failed to analyze email' });
+      const headers = payload?.headers || [];
+      email = {
+        user_id: userId,
+        message_id: messageId,
+        thread_id: detail.data.threadId,
+        sender: headers.find((h: any) => h.name?.toLowerCase() === 'from')?.value,
+        subject: headers.find((h: any) => h.name?.toLowerCase() === 'subject')?.value,
+        body_plain: body,
+        snippet: detail.data.snippet,
+        received_at: new Date(parseInt(detail.data.internalDate || '0')).toISOString()
+      };
+      await supabase.from('emails').upsert(email, { onConflict: 'message_id' });
     }
+
+    // 2. Perform AI Analysis
+    const analysis = await analyzeEmailWithAI({
+      subject: email.subject || '',
+      sender: email.sender || '',
+      body: email.body_plain || ''
+    });
+
+    if (analysis) {
+      await supabase.from('emails')
+        .update({
+          category: analysis.category,
+          ai_metadata: analysis
+        })
+        .eq('message_id', messageId);
+
+      res.json({ success: true, analysis });
+    } else {
+      res.status(500).json({ error: 'AI Analysis failed' });
+    }
+  } catch (error: any) {
+    logger.error('Analyze email error', { error: error.message });
+    res.status(500).json({ error: 'Failed to analyze email' });
+  }
 });
 
 /**
@@ -466,7 +466,7 @@ mailboxRouter.post('/historical/pause', requireAuth, async (req: AuthRequest, re
     await supabase.from('user_tokens')
       .update({ initial_sync_status: 'paused' })
       .eq('user_id', userId);
-    
+
     res.json({ status: 'paused' });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to pause scan' });
@@ -482,7 +482,7 @@ mailboxRouter.post('/historical/resume', requireAuth, async (req: AuthRequest, r
     await supabase.from('user_tokens')
       .update({ initial_sync_status: 'in_progress' })
       .eq('user_id', userId);
-    
+
     // Re-queue the job
     const { syncQueue } = await import('../config/bull');
     await syncQueue.add({ userId }, { removeOnComplete: true });
@@ -497,94 +497,94 @@ mailboxRouter.post('/historical/resume', requireAuth, async (req: AuthRequest, r
  * Get unified audit logs (sync and cleanup)
  */
 mailboxRouter.get('/audit-logs', requireAuth, async (req: AuthRequest, res) => {
-    try {
-        const userId = req.user?.id;
-        const page = parseInt(req.query.page as string) || 1;
-        const pageSize = 10;
-        
-        if (!userId) return res.status(401).json({ error: 'User not found' });
+  try {
+    const userId = req.user?.id;
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = 10;
 
-        // Fetch Recent Sync Stats (Top 5)
-        const { data: syncLogs } = await supabase
-            .from('sync_log')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(5);
+    if (!userId) return res.status(401).json({ error: 'User not found' });
 
-        // Fetch Paginated Cleanup Logs
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
+    // Fetch Recent Sync Stats (Top 5)
+    const { data: syncLogs } = await supabase
+      .from('sync_log')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(5);
 
-        const { data: cleanupLogs, count } = await supabase
-            .from('cleanup_log')
-            .select('*', { count: 'exact' })
-            .eq('user_id', userId)
-            .order('action_taken_at', { ascending: false })
-            .range(from, to);
+    // Fetch Paginated Cleanup Logs
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
-        res.json({
-            sync: syncLogs || [],
-            cleanup: {
-                data: cleanupLogs || [],
-                total: count || 0,
-                page,
-                hasMore: (from + (cleanupLogs?.length || 0)) < (count || 0)
-            }
-        });
-    } catch (error: any) {
-        logger.error('Audit logs error', { error: error.message });
-        res.status(500).json({ error: 'Failed to fetch audit logs' });
-    }
+    const { data: cleanupLogs, count } = await supabase
+      .from('cleanup_log')
+      .select('*', { count: 'exact' })
+      .eq('user_id', userId)
+      .order('action_taken_at', { ascending: false })
+      .range(from, to);
+
+    res.json({
+      sync: syncLogs || [],
+      cleanup: {
+        data: cleanupLogs || [],
+        total: count || 0,
+        page,
+        hasMore: (from + (cleanupLogs?.length || 0)) < (count || 0)
+      }
+    });
+  } catch (error: any) {
+    logger.error('Audit logs error', { error: error.message });
+    res.status(500).json({ error: 'Failed to fetch audit logs' });
+  }
 });
 
 /**
  * Clear audit logs for the user
  */
 mailboxRouter.delete('/audit-logs', requireAuth, async (req: AuthRequest, res) => {
-    try {
-        const userId = req.user?.id;
-        if (!userId) return res.status(401).json({ error: 'User not found' });
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'User not found' });
 
-        // Delete from both log tables
-        await supabase.from('cleanup_log').delete().eq('user_id', userId);
-        await supabase.from('sync_log').delete().eq('user_id', userId);
+    // Delete from both log tables
+    await supabase.from('cleanup_log').delete().eq('user_id', userId);
+    await supabase.from('sync_log').delete().eq('user_id', userId);
 
-        res.json({ success: true, message: 'Audit logs cleared successfully' });
-    } catch (error: any) {
-        logger.error('Clear audit logs error', { error: error.message });
-        res.status(500).json({ error: 'Failed to clear audit logs' });
-    }
+    res.json({ success: true, message: 'Audit logs cleared successfully' });
+  } catch (error: any) {
+    logger.error('Clear audit logs error', { error: error.message });
+    res.status(500).json({ error: 'Failed to clear audit logs' });
+  }
 });
 
 /**
  * Generate a summary of today's most important emails
  */
 mailboxRouter.post('/daily-brief', requireAuth, async (req: AuthRequest, res) => {
-    try {
-        const userId = req.user?.id;
-        if (!userId) return res.status(401).json({ error: 'User not found' });
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'User not found' });
 
-        const today = new Date().toISOString().split('T')[0];
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-        // Fetch last 5 meaningful emails from today
-        const { data: emails } = await supabase
-            .from('emails')
-            .select('*')
-            .eq('user_id', userId)
-            .gte('received_at', today)
-            .not('category', 'in', '("otp", "newsletter", "promotions")')
-            .order('received_at', { ascending: false })
-            .limit(5);
+    // Fetch last 10 meaningful emails from the last 24 hours
+    const { data: emails } = await supabase
+      .from('emails')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('received_at', last24h)
+      .not('category', 'in', '("otp", "newsletter", "promotions")')
+      .order('received_at', { ascending: false })
+      .limit(10);
 
-        if (!emails || emails.length === 0) {
-            return res.json({ summary: "No meaningful emails received today yet." });
-        }
+    if (!emails || emails.length === 0) {
+      return res.json({ summary: "No meaningful emails received in the last 24 hours." });
+    }
 
-        const emailText = emails.map(e => `Subject: ${e.subject}\nFrom: ${e.sender}\nBody: ${e.snippet}`).join('\n\n');
-        
-        const prompt = `
-            Please provide a very brief, 2-3 sentence summary of these important emails from today. 
+    const emailText = emails.map(e => `Subject: ${e.subject}\nFrom: ${e.sender}\nBody: ${e.snippet}`).join('\n\n');
+
+    const prompt = `
+            Please provide a very brief, 2-3 sentence summary of these important emails from the last 24 hours. 
             Focus on cost updates, deliveries, payments, or personal requests. 
             Ignore newsletters or generic notifications.
             
@@ -592,17 +592,17 @@ mailboxRouter.post('/daily-brief', requireAuth, async (req: AuthRequest, res) =>
             ${emailText}
         `;
 
-        const { analyzeEmailWithAI } = await import('../services/email.analysis.service');
-        const model = (await import('@google/generative-ai')).GoogleGenerativeAI;
-        const genAI = new model(process.env.LLM_API_KEY || '');
-        const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        
-        const result = await aiModel.generateContent(prompt);
-        const summary = result.response.text();
+    const { analyzeEmailWithAI } = await import('../services/email.analysis.service');
+    const model = (await import('@google/generative-ai')).GoogleGenerativeAI;
+    const genAI = new model(process.env.LLM_API_KEY || '');
+    const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        res.json({ summary });
-    } catch (error: any) {
-        logger.error('Daily brief error', { error: error.message });
-        res.status(500).json({ error: 'Failed to generate daily brief' });
-    }
+    const result = await aiModel.generateContent(prompt);
+    const summary = result.response.text();
+
+    res.json({ summary });
+  } catch (error: any) {
+    logger.error('Daily brief error', { error: error.message });
+    res.status(500).json({ error: 'Failed to generate daily brief' });
+  }
 });
