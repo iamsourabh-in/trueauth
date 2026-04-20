@@ -18,196 +18,207 @@ interface NavItem {
   standalone: true,
   imports: [CommonModule, RouterOutlet, LucideAngularModule, DatePipe],
   template: `
-    <div class="dash-shell">
+    <div class="layout-container">
       <!-- Mobile Header -->
       <header class="mobile-header">
-        <div class="sidebar-logo" (click)="router.navigate(['/dashboard/summary'])">
-          <img src="assets/logo.png" alt="TrueAuth Logo" class="main-logo">
-          <span>TrueAuth</span>
+        <div class="mobile-logo-group" (click)="router.navigate(['/dashboard/summary'])">
+          <img src="assets/logo.png" alt="TrueAuth Logo" class="mobile-main-logo">
+          <span class="mobile-brand">TrueAuth</span>
         </div>
-        <button class="hamburger-btn" (click)="toggleMobileMenu()">
-          <lucide-icon [name]="mobileMenuOpen ? 'x' : 'menu'" [size]="20"></lucide-icon>
+        <button class="mobile-menu-toggle" (click)="toggleMobileMenu()" aria-label="Toggle Menu">
+          <lucide-icon [name]="mobileMenuOpen ? 'x' : 'menu'" [size]="24"></lucide-icon>
         </button>
       </header>
 
-      <!-- Sidebar -->
-      <aside class="sidebar" [class.collapsed]="collapsed" [class.mobile-open]="mobileMenuOpen">
-        <!-- Logo -->
-        <div class="sidebar-header hide-mobile">
-          <div class="sidebar-logo" (click)="router.navigate(['/dashboard/summary'])">
-            <img src="assets/logo.png" alt="TrueAuth Logo" class="main-logo">
-            <span *ngIf="!collapsed">TrueAuth</span>
-          </div>
-          <button class="collapse-btn" (click)="collapsed = !collapsed" [title]="collapsed ? 'Expand' : 'Collapse'">
-            <lucide-icon [name]="collapsed ? 'chevron-right' : 'chevron-left'" [size]="16"></lucide-icon>
-          </button>
-        </div>
-
-        <!-- User pill -->
-        <div class="user-pill" *ngIf="(!collapsed || mobileMenuOpen) && email">
-          <div class="user-avatar">{{ initial }}</div>
-          <div class="user-info">
-            <span class="user-email">{{ email }}</span>
-          </div>
-        </div>
-
-        <!-- Nav items -->
-        <nav class="sidebar-nav">
-          <button
-            *ngFor="let item of navItems"
-            class="nav-item"
-            [class.active]="router.url.startsWith(item.route)"
-            (click)="router.navigate([item.route]); toggleMobileMenu(false)"
-            [title]="item.label"
-          >
-            <span class="nav-icon">
-              <lucide-icon [name]="item.icon" [size]="18"></lucide-icon>
-            </span>
-            <span class="nav-label" *ngIf="!collapsed || mobileMenuOpen">{{ item.label }}</span>
-          </button>
-        </nav>
-
-        <!-- Bottom -->
-        <div class="sidebar-footer">
-          <button class="nav-item" (click)="theme.toggle()" title="Toggle theme">
-            <span class="nav-icon">
-              <lucide-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18"></lucide-icon>
-            </span>
-            <span class="nav-label" *ngIf="!collapsed || mobileMenuOpen">
-              {{ theme.theme() === 'dark' ? 'Light mode' : 'Dark mode' }}
-            </span>
-          </button>
+      <div class="dash-shell">
+        <!-- Sidebar -->
+        <aside class="sidebar" 
+               [class.collapsed]="collapsed" 
+               [class.mobile-open]="mobileMenuOpen">
           
-          <button class="nav-item danger hide-mobile" (click)="purgeData()" title="Purge My Data" *ngIf="!collapsed">
-            <span class="nav-icon">
-              <lucide-icon name="user-x" [size]="18"></lucide-icon>
-            </span>
-            <span class="nav-label">Purge My Data</span>
-          </button>
-
-          <button class="nav-item" (click)="signOut()" title="Sign out">
-            <span class="nav-icon">
-              <lucide-icon name="log-out" [size]="18"></lucide-icon>
-            </span>
-            <span class="nav-label" *ngIf="!collapsed || mobileMenuOpen">Sign out</span>
-          </button>
-        </div>
-      </aside>
-
-      <!-- Overlay for mobile menu -->
-      <div class="sidebar-overlay" *ngIf="mobileMenuOpen" (click)="toggleMobileMenu(false)"></div>
-
-      <!-- Main -->
-      <main class="dash-main">
-        <header class="dash-topbar hide-mobile">
-          <h2 class="topbar-title">{{ currentTitle }}</h2>
-          <div class="topbar-right">
-             <div class="topbar-time">{{ now | date:'EEE, MMM d · h:mm a' }}</div>
+          <!-- Desktop Header -->
+          <div class="sidebar-header hide-mobile">
+            <div class="sidebar-logo" (click)="router.navigate(['/dashboard/summary'])">
+              <img src="assets/logo.png" alt="TrueAuth Logo" class="main-logo">
+              <span *ngIf="!collapsed">TrueAuth</span>
+            </div>
+            <button class="desktop-collapse-btn" (click)="collapsed = !collapsed" [title]="collapsed ? 'Expand' : 'Collapse'">
+              <lucide-icon [name]="collapsed ? 'chevron-right' : 'chevron-left'" [size]="16"></lucide-icon>
+            </button>
           </div>
-        </header>
-        <div class="dash-content">
-          <router-outlet></router-outlet>
-        </div>
-      </main>
+
+          <!-- User Section -->
+          <div class="user-profile-section" *ngIf="(!collapsed || mobileMenuOpen) && email">
+            <div class="avatar-circle">{{ initial }}</div>
+            <div class="user-details">
+              <span class="user-email-text">{{ email }}</span>
+            </div>
+          </div>
+
+          <!-- Navigation -->
+          <nav class="navigation-links">
+            <button
+              *ngFor="let item of navItems"
+              class="nav-link-btn"
+              [class.is-active]="router.url.startsWith(item.route)"
+              (click)="router.navigate([item.route]); toggleMobileMenu(false)"
+              [title]="item.label"
+            >
+              <span class="nav-link-icon">
+                <lucide-icon [name]="item.icon" [size]="20"></lucide-icon>
+              </span>
+              <span class="nav-link-label" *ngIf="!collapsed || mobileMenuOpen">{{ item.label }}</span>
+            </button>
+          </nav>
+
+          <!-- Footer Actions -->
+          <div class="sidebar-actions-footer">
+            <button class="nav-link-btn" (click)="theme.toggle()" title="Toggle theme">
+              <span class="nav-link-icon">
+                <lucide-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="20"></lucide-icon>
+              </span>
+              <span class="nav-link-label" *ngIf="!collapsed || mobileMenuOpen">
+                {{ theme.theme() === 'dark' ? 'Light mode' : 'Dark mode' }}
+              </span>
+            </button>
+            
+            <button class="nav-link-btn text-red" (click)="purgeData()" title="Purge My Data" *ngIf="!collapsed || mobileMenuOpen">
+              <span class="nav-link-icon">
+                <lucide-icon name="user-x" [size]="20"></lucide-icon>
+              </span>
+              <span class="nav-link-label" *ngIf="!collapsed || mobileMenuOpen">Purge My Data</span>
+            </button>
+
+            <button class="nav-link-btn" (click)="signOut()" title="Sign out">
+              <span class="nav-link-icon">
+                <lucide-icon name="log-out" [size]="20"></lucide-icon>
+              </span>
+              <span class="nav-link-label" *ngIf="!collapsed || mobileMenuOpen">Sign out</span>
+            </button>
+          </div>
+        </aside>
+
+        <!-- Overlay -->
+        <div class="mobile-sidebar-overlay" *ngIf="mobileMenuOpen" (click)="toggleMobileMenu(false)"></div>
+
+        <!-- Main Display -->
+        <main class="main-viewport">
+          <header class="main-top-navbar hide-mobile">
+            <h1 class="page-current-title">{{ currentTitle }}</h1>
+            <div class="navbar-right-utils">
+               <div class="live-timestamp">{{ now | date:'EEE, MMM d · h:mm a' }}</div>
+            </div>
+          </header>
+          
+          <div class="viewport-scroller">
+            <router-outlet></router-outlet>
+          </div>
+        </main>
+      </div>
     </div>
   `,
   styles: [`
-    .dash-shell { display: flex; height: 100vh; overflow: hidden; background: var(--bg); position: relative; }
+    :host { display: block; height: 100vh; width: 100%; overflow: hidden; }
+    
+    .layout-container { position: relative; height: 100%; width: 100%; display: flex; flex-direction: column; }
+    
+    .dash-shell { display: flex; flex: 1; height: 100%; background: var(--bg); overflow: hidden; }
 
-    /* Mobile Header */
+    /* Mobile Header - Always Above Everything on Small Screens */
     .mobile-header { 
       display: none; height: 60px; background: var(--surface); 
-      border-bottom: 1px solid var(--border); width: 100%;
+      border-bottom: 2px solid var(--border); width: 100%;
       align-items: center; justify-content: space-between; padding: 0 1rem;
-      position: absolute; top: 0; left: 0; z-index: 50;
+      flex-shrink: 0; z-index: 500;
     }
-    .hamburger-btn { background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
+    .mobile-logo-group { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    .mobile-main-logo { height: 24px; width: auto; }
+    .mobile-brand { font-size: 1.1rem; font-weight: 900; color: var(--text-primary); letter-spacing: -0.05em; }
+    .mobile-menu-toggle { 
+      background: var(--accent-subtle); border: none; color: var(--accent); 
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
 
+    /* Sidebar Foundation */
     .sidebar {
       display: flex; flex-direction: column;
-      width: 224px; min-width: 224px;
+      width: 240px; min-width: 240px;
       background: var(--surface);
       border-right: 1px solid var(--border);
-      transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), width 0.22s ease;
-      overflow: hidden; z-index: 100;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 400; position: relative;
     }
-    .sidebar.collapsed { width: 64px; min-width: 64px; }
+    .sidebar.collapsed { width: 72px; min-width: 72px; }
 
     .sidebar-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 0.75rem; height: 58px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      padding: 0 1.25rem; height: 64px; border-bottom: 1px solid var(--border);
     }
-    .sidebar-logo {
-      display: flex; align-items: center; gap: 0.6rem;
-      font-size: 1.1rem; font-weight: 800; letter-spacing: -0.04em;
-      color: var(--text-primary);
-      white-space: nowrap; cursor: pointer;
-    }
-    .main-logo { height: 28px; width: auto; }
-    .collapse-btn {
-      background: none; border: 1px solid var(--border); border-radius: 0.375rem;
-      cursor: pointer; padding: 0.28rem; color: var(--text-secondary);
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s; flex-shrink: 0; margin-left: auto;
+    .sidebar-logo { display: flex; align-items: center; gap: 0.75rem; font-weight: 800; cursor: pointer; }
+    .main-logo { height: 30px; width: auto; }
+    .desktop-collapse-btn { 
+      background: none; border: 1px solid var(--border); border-radius: 6px; 
+      padding: 4px; color: var(--text-secondary); cursor: pointer;
     }
 
-    .user-pill {
-      display: flex; align-items: center; gap: 0.6rem;
-      margin: 0.6rem; padding: 0.6rem 0.75rem;
-      background: var(--surface2); border: 1px solid var(--border); border-radius: 0.75rem;
-      overflow: hidden; flex-shrink: 0;
+    .user-profile-section {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin: 1rem; padding: 0.75rem;
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
     }
-    .user-avatar {
-      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white; font-size: 0.75rem; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
+    .avatar-circle {
+      width: 32px; height: 32px; border-radius: 50%; 
+      background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;
     }
-    .user-email { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 130px; }
+    .user-email-text { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .sidebar-nav { flex: 1; padding: 0.5rem; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
-    .nav-item {
-      display: flex; align-items: center; gap: 0.7rem;
-      padding: 0.58rem 0.7rem; border-radius: 0.6rem;
+    .navigation-links { flex: 1; padding: 0.75rem; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+    .nav-link-btn {
+      display: flex; align-items: center; gap: 0.8rem;
+      padding: 0.7rem 0.8rem; border-radius: 10px;
       cursor: pointer; border: none; background: none;
-      color: var(--text-secondary); font-size: 0.875rem; font-weight: 500;
-      text-align: left; width: 100%; transition: all 0.14s ease;
-      white-space: nowrap;
+      color: var(--text-secondary); font-size: 0.9rem; font-weight: 500;
+      transition: all 0.2s; width: 100%; text-align: left;
     }
-    .nav-item:hover { background: var(--surface2); color: var(--text-primary); }
-    .nav-item.active { background: var(--accent-subtle); color: var(--accent); font-weight: 600; }
-    .nav-item.danger { color: var(--danger); }
-    .nav-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nav-link-btn:hover { background: var(--surface2); color: var(--text-primary); }
+    .nav-link-btn.is-active { background: var(--accent-subtle); color: var(--accent); font-weight: 700; }
+    .nav-link-btn.text-red { color: var(--danger); }
+    .nav-link-icon { flex-shrink: 0; }
 
-    .sidebar-footer { padding: 0.5rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+    .sidebar-actions-footer { padding: 0.75rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
 
-    .dash-main { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
-    .dash-topbar { height: 58px; min-height: 58px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; }
-    .topbar-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
-    .topbar-time { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+    /* Main Viewport */
+    .main-viewport { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .main-top-navbar { height: 64px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; flex-shrink: 0; }
+    .page-current-title { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); }
+    .live-timestamp { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
     
-    .dash-content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+    .viewport-scroller { flex: 1; overflow-y: auto; padding: 2rem; }
 
-    .sidebar-overlay { 
-      position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
-      z-index: 90; backdrop-filter: blur(2px);
+    .mobile-sidebar-overlay { 
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
+      z-index: 350; backdrop-filter: blur(5px);
+      animation: fadeIn 0.3s ease-out;
     }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    .hide-mobile { display: flex; }
+    .hide-mobile { display: flex !important; }
 
-    @media (max-width: 768px) {
-      .mobile-header { display: flex; }
+    @media (max-width: 1024px) {
+      .mobile-header { display: flex !important; }
       .sidebar { 
-        position: fixed; transform: translateX(-110%); 
+        position: fixed; transform: translateX(-100%); 
         top: 0; bottom: 0; left: 0; 
-        height: 100vh; min-width: 280px; width: 280px;
-        box-shadow: 20px 0 50px rgba(0,0,0,0.15);
-        visibility: hidden; transition: transform 0.3s ease, visibility 0.3s;
+        height: 100vh; width: 300px;
+        box-shadow: 20px 0 60px rgba(0,0,0,0.3);
+        z-index: 1000; visibility: hidden;
       }
       .sidebar.mobile-open { transform: translateX(0); visibility: visible; }
       .hide-mobile { display: none !important; }
-      .dash-main { margin-top: 60px; height: calc(100vh - 60px); }
-      .dash-content { padding: 1rem; }
+      .viewport-scroller { padding: 1.25rem; }
+      /* No padding-top needed if flex column is used */
     }
   `]
 })
@@ -245,7 +256,6 @@ export class DashboardLayoutComponent implements OnInit {
       this.initial = this.email.charAt(0).toUpperCase();
     });
 
-    // Auto-close menu on route change
     this.router.events.subscribe(() => {
       this.mobileMenuOpen = false;
     });
