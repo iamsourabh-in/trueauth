@@ -198,13 +198,15 @@ interface NavItem {
     @media (max-width: 768px) {
       .mobile-header { display: flex; }
       .sidebar { 
-        position: fixed; transform: translateX(-100%); 
-        top: 0; bottom: 0; height: 100%; min-width: 260px; width: 260px;
-        box-shadow: 20px 0 50px rgba(0,0,0,0.1);
+        position: fixed; transform: translateX(-110%); 
+        top: 0; bottom: 0; left: 0; 
+        height: 100vh; min-width: 280px; width: 280px;
+        box-shadow: 20px 0 50px rgba(0,0,0,0.15);
+        visibility: hidden; transition: transform 0.3s ease, visibility 0.3s;
       }
-      .sidebar.mobile-open { transform: translateX(0); }
+      .sidebar.mobile-open { transform: translateX(0); visibility: visible; }
       .hide-mobile { display: none !important; }
-      .dash-main { margin-top: 60px; }
+      .dash-main { margin-top: 60px; height: calc(100vh - 60px); }
       .dash-content { padding: 1rem; }
     }
   `]
