@@ -88,7 +88,7 @@ Chart.register(...registerables);
          </div>
          
          <div class="brief-content anim-fade-in" *ngIf="dailyBrief">
-            <lucide-icon name="quote-blue" [size]="20" class="quote-icon"></lucide-icon>
+            <lucide-icon name="quote" [size]="20" class="quote-icon"></lucide-icon>
             <p class="brief-text">{{ dailyBrief }}</p>
          </div>
       </div>
