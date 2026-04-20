@@ -263,7 +263,7 @@ export class DashboardLayoutComponent implements OnInit {
 
   async purgeData() {
     if (confirm('Are you sure? This will delete all collected emails and rules!')) {
-      await this.api.purgeUserData();
+      await this.api.purgeData();
       window.location.reload();
     }
   }
