@@ -36,13 +36,18 @@ import { LucideAngularModule } from 'lucide-angular';
           [style.z-index]="activeMenuId === email.message_id ? 1000 : 1"
         >
           <div class="email-avatar">{{ email.sender.charAt(0).toUpperCase() }}</div>
-          <div class="email-main">
+          <div class="email-main" (click)="viewEmail(email.message_id)">
             <div class="email-top">
               <span class="email-sender" [title]="email.sender">{{ email.sender }}</span>
               <span class="email-date">{{ email.received_at | date:'MMM d' }}</span>
             </div>
             <div class="email-subject">{{ email.subject }}</div>
             <div class="email-snippet">{{ email.snippet }}</div>
+            
+            <div class="email-metadata" *ngIf="email.category || email.ai_metadata?.tags">
+              <span class="badge category" *ngIf="email.category">{{ email.category }}</span>
+              <span class="badge tag" *ngFor="let tag of email.ai_metadata?.tags">{{ tag }}</span>
+            </div>
           </div>
           
           <div class="email-actions">
@@ -50,21 +55,26 @@ import { LucideAngularModule } from 'lucide-angular';
                 <lucide-icon name="more-vertical" [size]="18"></lucide-icon>
              </button>
 
-             <!-- Dropdown Menu -->
-             <div class="dropdown-menu" *ngIf="activeMenuId === email.message_id" (click)="$event.stopPropagation()">
-                <button class="menu-item" (click)="goToDraft(email.thread_id)">
-                  <lucide-icon name="pen-box" [size]="14"></lucide-icon>
-                  <span>AI Draft Reply</span>
-                </button>
-                <button class="menu-item danger" (click)="deleteEmail(email.message_id)">
-                  <lucide-icon name="trash-2" [size]="14"></lucide-icon>
-                  <span>Delete Email</span>
-                </button>
-             </div>
-          </div>
-        </div>
+              <!-- Dropdown Menu -->
+              <div class="dropdown-menu" *ngIf="activeMenuId === email.message_id" (click)="$event.stopPropagation()">
+                 <button class="menu-item" (click)="analyzeEmail(email.message_id)">
+                   <lucide-icon name="sparkles" [size]="14"></lucide-icon>
+                   <span>Analyze with AI</span>
+                 </button>
+                 <button class="menu-item" (click)="goToDraft(email.thread_id)">
+                   <lucide-icon name="pen-box" [size]="14"></lucide-icon>
+                   <span>AI Draft Reply</span>
+                 </button>
+                 <button class="menu-item danger" (click)="deleteEmail(email.message_id)">
+                   <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+                   <span>Delete Email</span>
+                 </button>
+              </div>
+           </div>
+         </div>
+ 
 
-        <!-- Load More -->
+         <!-- Load More -->
         <div class="pagination-area" *ngIf="hasMore && !loading">
             <button class="btn-secondary" (click)="loadMore()">
                 <span>Load More</span>
@@ -141,6 +151,14 @@ import { LucideAngularModule } from 'lucide-angular';
     .menu-item.danger { color: var(--danger); }
     .menu-item.danger:hover { background: rgba(239,68,68,0.08); }
 
+    .email-metadata { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+    .badge {
+      font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem;
+      border-radius: 2rem; text-transform: capitalize;
+    }
+    .badge.category { background: var(--accent); color: white; }
+    .badge.tag { background: var(--surface2); color: var(--text-secondary); border: 1px solid var(--border); }
+
     .empty-state { padding: 4rem 2rem; text-align: center; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
   `]
 })
@@ -211,6 +229,26 @@ export class EmailListComponent implements OnInit {
         } catch (e) {
             this.emails.splice(index, 0, removed);
         }
+    }
+  }
+
+  viewEmail(id: string) {
+    this.router.navigate(['/dashboard/inbox', id]);
+  }
+
+  async analyzeEmail(id: string) {
+    this.activeMenuId = null;
+    const email = this.emails.find(e => e.message_id === id);
+    if (!email) return;
+
+    try {
+        const res = await this.api.analyzeMessage(id);
+        if (res.success) {
+            email.category = res.analysis.category;
+            email.ai_metadata = res.analysis;
+        }
+    } catch (e) {
+        console.error('Analysis failed', e);
     }
   }
 }

@@ -3,7 +3,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getGmailClient } from '../config/google';
 import { supabase } from '../config/supabase';
 import { createLogger, requestLogMeta } from '../lib/logger';
-import { identifyCategory } from '../services/email.analysis.service';
+import { identifyCategory, analyzeEmailWithAI } from '../services/email.analysis.service';
 import { redis } from '../config/redis';
 import { syncQueue } from '../config/bull';
 import { processHistoricalSync } from '../jobs/historical-sync.job';
@@ -250,6 +250,161 @@ mailboxRouter.get('/emails', requireAuth, async (req: AuthRequest, res) => {
     logger.error('Get emails error', { ...requestLogMeta(req), error: error.message });
     res.status(500).json({ error: 'Failed to fetch emails' });
   }
+});
+
+/**
+ * Get full email details including body
+ */
+mailboxRouter.get('/messages/:id', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    const messageId = req.params.id;
+    if (!userId) return res.status(401).json({ error: 'User not found' });
+
+    // 1. Try to get from Database first
+    const { data: dbEmail } = await supabase
+      .from('emails')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('message_id', messageId)
+      .single();
+
+    if (dbEmail && dbEmail.body_plain) {
+      logger.info('Serving email detail from database', { messageId });
+      return res.json({
+        message_id: dbEmail.message_id,
+        thread_id: dbEmail.thread_id,
+        sender: dbEmail.sender,
+        subject: dbEmail.subject,
+        received_at: dbEmail.received_at,
+        body: dbEmail.body_plain,
+        snippet: dbEmail.snippet,
+        category: dbEmail.category
+      });
+    }
+
+    // 2. Fallback to Gmail API if not in DB or body missing
+    logger.info('Email not in DB or body missing, fetching from Gmail', { messageId });
+    const { data: tokenData } = await supabase.from('user_tokens').select('*').eq('user_id', userId).single();
+    if (!tokenData?.gmail_token) return res.status(400).json({ error: 'Tokens missing' });
+
+    const gmail = getGmailClient(tokenData.gmail_token, tokenData.refresh_token);
+    const detail: any = await gmail.users.messages.get({
+        userId: 'me', id: messageId, format: 'full'
+    } as any);
+
+    // Parse body
+    let body = '';
+    const payload = detail.data.payload;
+    if (payload?.parts) {
+        const part = payload.parts.find((p: any) => p.mimeType === 'text/plain') || payload.parts[0];
+        if (part?.body?.data) {
+            body = Buffer.from(part.body.data, 'base64').toString();
+        }
+    } else if (payload?.body?.data) {
+        body = Buffer.from(payload.body.data, 'base64').toString();
+    }
+
+    const headers = payload?.headers || [];
+    const emailData = {
+        message_id: detail.data.id as string,
+        thread_id: detail.data.threadId as string,
+        sender: headers.find((h: any) => h.name?.toLowerCase() === 'from')?.value,
+        subject: headers.find((h: any) => h.name?.toLowerCase() === 'subject')?.value,
+        received_at: new Date(parseInt(detail.data.internalDate || '0')).toISOString(),
+        body: body || detail.data.snippet || '',
+        snippet: detail.data.snippet,
+        labels: detail.data.labelIds
+    };
+
+    // 3. Optional: Sync back to DB so it's there next time
+    await supabase.from('emails').upsert({
+      user_id: userId,
+      message_id: emailData.message_id,
+      thread_id: emailData.thread_id,
+      sender: emailData.sender,
+      subject: emailData.subject,
+      snippet: emailData.snippet,
+      body_plain: emailData.body,
+      received_at: emailData.received_at
+    }, { onConflict: 'message_id' });
+
+    res.json(emailData);
+  } catch (error: any) {
+    logger.error('Get email detail error', { message: error.message });
+    res.status(500).json({ error: 'Failed to fetch email details' });
+  }
+});
+
+/**
+ * AI Analysis for a single email
+ */
+mailboxRouter.post('/messages/:id/analyze', requireAuth, async (req: AuthRequest, res) => {
+    try {
+        const userId = req.user?.id;
+        const messageId = req.params.id;
+        if (!userId) return res.status(401).json({ error: 'User not found' });
+
+        // 1. Get email content (either from DB or Gmail)
+        let { data: email } = await supabase
+            .from('emails')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('message_id', messageId)
+            .single();
+
+        if (!email || !email.body_plain) {
+            // Need to fetch and save first if not exists
+            const { data: tokenData } = await supabase.from('user_tokens').select('*').eq('user_id', userId).single();
+            const gmail = getGmailClient(tokenData.gmail_token, tokenData.refresh_token);
+            const detail: any = await gmail.users.messages.get({ userId: 'me', id: messageId, format: 'full' } as any);
+            
+            let body = '';
+            const payload = detail.data.payload;
+            if (payload?.parts) {
+                const part = payload.parts.find((p: any) => p.mimeType === 'text/plain') || payload.parts[0];
+                if (part?.body?.data) body = Buffer.from(part.body.data, 'base64').toString();
+            } else if (payload?.body?.data) {
+                body = Buffer.from(payload.body.data, 'base64').toString();
+            }
+
+            const headers = payload?.headers || [];
+            email = {
+                user_id: userId,
+                message_id: messageId,
+                thread_id: detail.data.threadId,
+                sender: headers.find((h: any) => h.name?.toLowerCase() === 'from')?.value,
+                subject: headers.find((h: any) => h.name?.toLowerCase() === 'subject')?.value,
+                body_plain: body,
+                snippet: detail.data.snippet,
+                received_at: new Date(parseInt(detail.data.internalDate || '0')).toISOString()
+            };
+            await supabase.from('emails').upsert(email, { onConflict: 'message_id' });
+        }
+
+        // 2. Perform AI Analysis
+        const analysis = await analyzeEmailWithAI({
+            subject: email.subject || '',
+            sender: email.sender || '',
+            body: email.body_plain || ''
+        });
+
+        if (analysis) {
+            await supabase.from('emails')
+                .update({ 
+                    category: analysis.category,
+                    ai_metadata: analysis 
+                })
+                .eq('message_id', messageId);
+            
+            res.json({ success: true, analysis });
+        } else {
+            res.status(500).json({ error: 'AI Analysis failed' });
+        }
+    } catch (error: any) {
+        logger.error('Analyze email error', { error: error.message });
+        res.status(500).json({ error: 'Failed to analyze email' });
+    }
 });
 
 /**

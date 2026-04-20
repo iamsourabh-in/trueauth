@@ -26,3 +26,5 @@ CREATE TABLE public.cleanup_log (
 );
 
 CREATE INDEX idx_cleanup_log_user_id ON public.cleanup_log(user_id);
+
+ALTER TABLE public.emails ADD COLUMN IF NOT EXISTS ai_metadata JSONB;

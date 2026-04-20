@@ -40,19 +40,33 @@ export const processDailySync = async () => {
                 messages.map(async (msg) => {
                     try {
                         const detail = await gmail.users.messages.get({ 
-                            userId: 'me', id: msg.id as string, format: 'metadata',
-                            metadataHeaders: ['From', 'Subject', 'Date', 'List-Unsubscribe']
+                            userId: 'me', id: msg.id as string, format: 'full'
                         });
-                        const headers = detail.data.payload?.headers || [];
+                        
+                        const payload = detail.data.payload;
+                        const headers = payload?.headers || [];
                         const labels = detail.data.labelIds || [];
-                        const dateVal = headers.find(h => h.name?.toLowerCase() === 'date')?.value;
+                        const internalDate = detail.data.internalDate;
+
+                        // Extract body
+                        let body = '';
+                        if (payload?.parts) {
+                            const part = payload.parts.find(p => p.mimeType === 'text/plain') || payload.parts[0];
+                            if (part?.body?.data) {
+                                body = Buffer.from(part.body.data, 'base64').toString();
+                            }
+                        } else if (payload?.body?.data) {
+                            body = Buffer.from(payload.body.data, 'base64').toString();
+                        }
+
                         return {
                             message_id: msg.id as string,
                             thread_id: msg.threadId || '',
                             sender: headers.find(h => h.name?.toLowerCase() === 'from')?.value || 'Unknown',
                             subject: headers.find(h => h.name?.toLowerCase() === 'subject')?.value || '(No Subject)',
                             snippet: detail.data.snippet || '',
-                            received_at: new Date(dateVal || Date.now()).toISOString(),
+                            body_plain: body || detail.data.snippet || '',
+                            received_at: new Date(parseInt(internalDate || '0') || Date.now()).toISOString(),
                             category: identifyCategory(headers, labels)
                         };
                     } catch { return null; }

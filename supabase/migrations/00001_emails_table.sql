@@ -8,6 +8,8 @@ CREATE TABLE public.emails (
     subject TEXT,
     snippet TEXT,
     body_plain TEXT,
+    category TEXT,
+    ai_metadata JSONB,
     received_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     
