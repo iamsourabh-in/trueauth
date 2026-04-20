@@ -10,113 +10,222 @@ import { LucideAngularModule } from 'lucide-angular';
   template: `
     <div class="audit-page anim-fade-in">
       <div class="page-header">
-        <h2 class="page-title">Audit Logs & History</h2>
-        <p class="page-sub">A full trail of all synchronization and cleanup actions taken by TrueAuth.</p>
+        <div>
+          <h2 class="page-title">Activity Audit Trail</h2>
+          <p class="page-sub">Comprehensive history of synchronization and automated cleanup actions.</p>
+        </div>
       </div>
 
-      <div class="logs-container glass-card">
-         <div class="logs-header">
-            <div class="col-type">Type</div>
-            <div class="col-details">Details</div>
-            <div class="col-status">Status</div>
-            <div class="col-time">Time</div>
+      <!-- Part 1: Sync Summary Cards -->
+      <div class="section-title">
+        <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
+        <span>Recent Sync History</span>
+      </div>
+      
+      <div class="sync-grid" *ngIf="syncLogs.length > 0">
+         <div class="sync-card glass-card" *ngFor="let log of syncLogs">
+            <div class="sync-header">
+               <span class="sync-date">{{ log.created_at | date:'MMM d, h:mm a' }}</span>
+               <span class="status-dot" [class]="log.status"></span>
+            </div>
+            <div class="sync-stats">
+               <div class="stat">
+                  <span class="label">Processed</span>
+                  <span class="value">{{ log.emails_count }} emails</span>
+               </div>
+               <div class="stat">
+                  <span class="label">Status</span>
+                  <span class="value status-text" [class]="log.status">{{ log.status }}</span>
+               </div>
+            </div>
+         </div>
+      </div>
+      <div class="empty-mini shadow-sm" *ngIf="!loading && syncLogs.length === 0">
+         No synchronization records found.
+      </div>
+
+      <!-- Part 2: Cleanup Logs Table -->
+      <div class="section-title mt-8">
+        <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+        <span>Detailed Cleanup Logs</span>
+      </div>
+
+      <div class="logs-table-container glass-card">
+         <table class="audit-table">
+            <thead>
+               <tr>
+                  <th>Action Type</th>
+                  <th>Description</th>
+                  <th>Result</th>
+                  <th>Timestamp</th>
+               </tr>
+            </thead>
+            <tbody>
+               <tr *ngFor="let log of cleanupLogs; let i = index">
+                  <td>
+                     <div class="action-type">
+                        <div class="type-indicator"></div>
+                        {{ log.action_type?.replace('_', ' ') | uppercase }}
+                     </div>
+                  </td>
+                  <td>
+                     <div class="detail-cell">
+                        <span class="main-detail">Processed thread: {{ log.thread_id }}</span>
+                        <span class="sub-detail" *ngIf="log.metadata?.subject">{{ log.metadata.subject }}</span>
+                     </div>
+                  </td>
+                  <td>
+                     <span class="status-badge" [class]="log.status">{{ log.status }}</span>
+                  </td>
+                  <td class="time-cell">
+                     {{ log.action_taken_at | date:'MMM d, y, h:mm:ss a' }}
+                  </td>
+               </tr>
+            </tbody>
+         </table>
+
+         <div class="empty-state" *ngIf="!loading && cleanupLogs.length === 0">
+            <lucide-icon name="clipboard-list" [size]="44" style="opacity: 0.1"></lucide-icon>
+            <p>No cleanup actions recorded yet.</p>
          </div>
 
-         <div class="logs-list">
-            <div class="log-item" *ngFor="let log of logs; let i = index" [style.animation-delay]="i * 30 + 'ms'">
-               <div class="col-type">
-                  <div class="type-icon" [class]="log.type">
-                     <lucide-icon [name]="log.type === 'sync' ? 'refresh-cw' : 'shield-check'" [size]="14"></lucide-icon>
-                  </div>
-                  <span class="type-text">{{ log.type }}</span>
-               </div>
-               
-               <div class="col-details">
-                  <span class="detail-text">{{ log.details }}</span>
-               </div>
+         <div class="loading-overlay" *ngIf="loading">
+            <div class="spinner"></div>
+         </div>
 
-               <div class="col-status">
-                  <span class="status-badge" [class]="log.status">{{ log.status }}</span>
-               </div>
-
-               <div class="col-time">
-                  {{ log.timestamp | date:'MMM d, h:mm a' }}
-               </div>
-            </div>
-
-            <div class="empty-state" *ngIf="!loading && logs.length === 0">
-               <lucide-icon name="clipboard-list" [size]="40" style="opacity: 0.2"></lucide-icon>
-               <p>No activity logs found yet.</p>
-            </div>
-            
-            <div class="loading-state" *ngIf="loading">
-                <div class="spinner"></div>
+         <!-- Pagination -->
+         <div class="pagination-footer" *ngIf="totalCleanup > 0">
+            <span class="total-info">Showing {{ cleanupLogs.length }} of {{ totalCleanup }} records</span>
+            <div class="page-controls">
+               <button class="page-btn" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)">
+                  <lucide-icon name="chevron-left" [size]="16"></lucide-icon>
+               </button>
+               <span class="curr-page">Page {{ currentPage }}</span>
+               <button class="page-btn" [disabled]="!hasMore" (click)="changePage(currentPage + 1)">
+                  <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
+               </button>
             </div>
          </div>
       </div>
     </div>
   `,
   styles: [`
-    .audit-page { display: flex; flex-direction: column; gap: 1.5rem; }
+    .audit-page { display: flex; flex-direction: column; gap: 1.25rem; padding-bottom: 3rem; }
     .page-title { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.25rem; }
     .page-sub { font-size: 0.875rem; color: var(--text-secondary); }
 
-    .logs-container { padding: 0; overflow: hidden; border-radius: 1rem; }
-    
-    .logs-header { 
-      display: flex; padding: 1rem 1.5rem; background: var(--surface2); 
-      border-bottom: 1px solid var(--border); font-size: 0.75rem; 
-      font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+    .section-title { 
+      display: flex; align-items: center; gap: 0.6rem; 
+      font-size: 0.9rem; font-weight: 700; color: var(--text-secondary);
+      margin-bottom: 0.5rem;
     }
+    .mt-8 { margin-top: 2rem; }
+
+    /* Sync Grid */
+    .sync-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+    .sync-card { padding: 1.25rem; border-radius: 1rem; border: 1px solid var(--border); transition: all 0.2s; }
+    .sync-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .sync-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .sync-date { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+    .status-dot.success { background: #10b981; box-shadow: 0 0 8px rgba(16,185,129,0.4); }
     
-    .col-type { width: 120px; display: flex; align-items: center; gap: 0.75rem; }
-    .col-details { flex: 1; min-width: 0; padding: 0 1rem; }
-    .col-status { width: 100px; display: flex; justify-content: center; }
-    .col-time { width: 150px; text-align: right; color: var(--text-muted); font-size: 0.8rem; }
+    .sync-stats { display: flex; flex-direction: column; gap: 0.5rem; }
+    .stat { display: flex; flex-direction: column; }
+    .stat .label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+    .stat .value { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+    .status-text { text-transform: capitalize; }
+    .status-text.success { color: #10b981; }
 
-    .log-item { 
-      display: flex; padding: 1.1rem 1.5rem; border-bottom: 1px solid var(--border);
-      align-items: center; transition: background 0.2s; animation: fadeIn 0.3s ease-both;
+    /* Table */
+    .logs-table-container { 
+      background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; 
+      overflow: hidden; position: relative;
     }
-    .log-item:hover { background: var(--surface2); }
-    .log-item:last-child { border-bottom: none; }
-
-    .type-icon { 
-      width: 28px; height: 28px; border-radius: 50%; 
-      display: flex; align-items: center; justify-content: center;
+    .audit-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .audit-table th { 
+      background: var(--surface2); padding: 1rem 1.25rem; 
+      font-size: 0.75rem; font-weight: 700; color: var(--text-muted); 
+      text-transform: uppercase; letter-spacing: 0.05em;
     }
-    .type-icon.sync { background: var(--accent-subtle); color: var(--accent); }
-    .type-icon.cleanup { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-    .type-text { font-size: 0.85rem; font-weight: 600; text-transform: capitalize; color: var(--text-primary); }
+    .audit-table td { padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .audit-table tr:last-child td { border-bottom: none; }
 
-    .detail-text { font-size: 0.875rem; color: var(--text-primary); font-weight: 500; }
-    
+    .action-type { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 0.85rem; color: var(--text-primary); }
+    .type-indicator { width: 4px; height: 16px; border-radius: 2px; background: var(--accent); }
+
+    .detail-cell { display: flex; flex-direction: column; gap: 0.15rem; }
+    .main-detail { font-size: 0.875rem; color: var(--text-primary); font-weight: 500; }
+    .sub-detail { font-size: 0.75rem; color: var(--text-muted); }
+
     .status-badge { 
       font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; 
       border-radius: 4px; text-transform: uppercase;
     }
-    .status-badge.success, .status-badge.completed { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-    .status-badge.failed { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .status-badge.completed, .status-badge.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    
+    .time-cell { font-size: 0.8rem; color: var(--text-muted); text-align: right; }
 
+    .pagination-footer { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 1rem 1.25rem; background: var(--surface2); border-top: 1px solid var(--border);
+    }
+    .total-info { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; }
+    .page-controls { display: flex; align-items: center; gap: 1rem; }
+    .page-btn { 
+      background: var(--surface); border: 1px solid var(--border); 
+      padding: 0.4rem; border-radius: 0.5rem; cursor: pointer; color: var(--text-primary);
+      transition: all 0.2s;
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .curr-page { font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
+
+    .loading-overlay { 
+      position: absolute; inset: 0; background: rgba(var(--surface-rgb), 0.7); 
+      display: flex; align-items: center; justify-content: center; z-index: 10;
+    }
+    .spinner { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    
+    .empty-mini { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; border: 1px dashed var(--border); border-radius: 1rem; }
     .empty-state { padding: 4rem; text-align: center; color: var(--text-muted); }
-    .loading-state { padding: 3rem; display: flex; justify-content: center; }
-    .spinner { width: 24px; height: 24px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+
     @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   `]
 })
 export class AuditLogsComponent implements OnInit {
   api = inject(ApiService);
-  logs: any[] = [];
+  
+  syncLogs: any[] = [];
+  cleanupLogs: any[] = [];
+  
   loading = true;
+  currentPage = 1;
+  totalCleanup = 0;
+  hasMore = false;
 
   async ngOnInit() {
+    await this.loadLogs();
+  }
+
+  async loadLogs(page: number = 1) {
+    this.loading = true;
     try {
-      this.logs = await this.api.getAuditLogs();
+      const res = await this.api.getAuditLogs(page);
+      this.syncLogs = res.sync;
+      this.cleanupLogs = res.cleanup.data;
+      this.totalCleanup = res.cleanup.total;
+      this.hasMore = res.cleanup.hasMore;
+      this.currentPage = page;
     } catch (err) {
       console.error('Audit logs failed', err);
     } finally {
       this.loading = false;
     }
+  }
+
+  async changePage(page: number) {
+    if (page < 1) return;
+    await this.loadLogs(page);
   }
 }
