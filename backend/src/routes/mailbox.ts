@@ -595,7 +595,7 @@ mailboxRouter.post('/daily-brief', requireAuth, async (req: AuthRequest, res) =>
     const { analyzeEmailWithAI } = await import('../services/email.analysis.service');
     const model = (await import('@google/generative-ai')).GoogleGenerativeAI;
     const genAI = new model(process.env.LLM_API_KEY || '');
-    const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     const result = await aiModel.generateContent(prompt);
     const summary = result.response.text();

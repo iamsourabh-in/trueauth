@@ -28,7 +28,7 @@ export async function analyzeEmailWithAI(email: { subject: string, sender: strin
     if (!process.env.LLM_API_KEY) return null;
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
         const prompt = `
             Analyze this email and provide a JSON response with:
             1. category (one of: personal, work, travel, finance, newsletter, shopping, recruitment, technical, notification)
