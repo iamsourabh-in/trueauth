@@ -556,3 +556,53 @@ mailboxRouter.delete('/audit-logs', requireAuth, async (req: AuthRequest, res) =
         res.status(500).json({ error: 'Failed to clear audit logs' });
     }
 });
+
+/**
+ * Generate a summary of today's most important emails
+ */
+mailboxRouter.post('/daily-brief', requireAuth, async (req: AuthRequest, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ error: 'User not found' });
+
+        const today = new Date().toISOString().split('T')[0];
+
+        // Fetch last 5 meaningful emails from today
+        const { data: emails } = await supabase
+            .from('emails')
+            .select('*')
+            .eq('user_id', userId)
+            .gte('received_at', today)
+            .not('category', 'in', '("otp", "newsletter", "promotions")')
+            .order('received_at', { ascending: false })
+            .limit(5);
+
+        if (!emails || emails.length === 0) {
+            return res.json({ summary: "No meaningful emails received today yet." });
+        }
+
+        const emailText = emails.map(e => `Subject: ${e.subject}\nFrom: ${e.sender}\nBody: ${e.snippet}`).join('\n\n');
+        
+        const prompt = `
+            Please provide a very brief, 2-3 sentence summary of these important emails from today. 
+            Focus on cost updates, deliveries, payments, or personal requests. 
+            Ignore newsletters or generic notifications.
+            
+            Emails:
+            ${emailText}
+        `;
+
+        const { analyzeEmailWithAI } = await import('../services/email.analysis.service');
+        const model = (await import('@google/generative-ai')).GoogleGenerativeAI;
+        const genAI = new model(process.env.LLM_API_KEY || '');
+        const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        
+        const result = await aiModel.generateContent(prompt);
+        const summary = result.response.text();
+
+        res.json({ summary });
+    } catch (error: any) {
+        logger.error('Daily brief error', { error: error.message });
+        res.status(500).json({ error: 'Failed to generate daily brief' });
+    }
+});

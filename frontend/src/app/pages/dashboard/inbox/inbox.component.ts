@@ -156,6 +156,25 @@ Chart.register(...registerables);
       </div>
 
       <!-- Actions -->
+      <div class="summary-action-box glass-card" *ngIf="!loading">
+         <div class="box-header">
+            <div class="header-info">
+               <h3 class="box-title">Daily Intelligent Brief</h3>
+               <p class="box-sub">Get a 2-sentence summary of today's key emails (payments, orders, and requests).</p>
+            </div>
+            <button class="btn-brief" (click)="generateBrief()" [disabled]="briefLoading">
+               <lucide-icon name="sparkles" [size]="16" *ngIf="!briefLoading"></lucide-icon>
+               <div class="spinner-tiny" *ngIf="briefLoading"></div>
+               <span>{{ briefLoading ? 'Analyzing...' : 'Summarize Today' }}</span>
+            </button>
+         </div>
+         
+         <div class="brief-content anim-fade-in" *ngIf="dailyBrief">
+            <lucide-icon name="quote-blue" [size]="20" class="quote-icon"></lucide-icon>
+            <p class="brief-text">{{ dailyBrief }}</p>
+         </div>
+      </div>
+
       <div class="action-row">
         <button class="btn-primary" (click)="refresh()" [disabled]="loading">
           <lucide-icon name="refresh-cw" [size]="15" color="white" [class.spin]="loading"></lucide-icon>
@@ -253,6 +272,31 @@ Chart.register(...registerables);
     .m-item.danger { color: var(--danger); }
 
     .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent); color: white; border: none; border-radius: 0.625rem; cursor: pointer; font-size: 0.85rem; font-weight: 700; padding: 0.7rem 1.25rem; transition: all 0.2s; }
+    
+    .summary-action-box { 
+      padding: 1.5rem; background: var(--accent-subtle); border: 1px solid var(--accent); 
+      border-left: 5px solid var(--accent); border-radius: 1rem;
+    }
+    .box-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .box-title { font-size: 1rem; font-weight: 800; color: var(--text-primary); }
+    .box-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.15rem; }
+    
+    .btn-brief { 
+      display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem;
+      background: var(--accent); color: white; border: none; border-radius: 0.75rem;
+      font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-brief:hover:not(:disabled) { box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3); transform: translateY(-1px); }
+    .btn-brief:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .brief-content { 
+      margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border);
+      display: flex; gap: 1rem;
+    }
+    .brief-text { font-size: 0.95rem; font-style: italic; color: var(--text-primary); line-height: 1.6; font-weight: 500; }
+    .spinner-tiny { width: 14px; height: 14px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
+
     .spin { animation: spin 1.2s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
   `]
@@ -265,6 +309,8 @@ export class InboxComponent implements OnInit, AfterViewInit {
   theme = inject(ThemeService);
 
   loading = true;
+  briefLoading = false;
+  dailyBrief = '';
   error   = '';
   stats   = { 
     totalEmailsInGmail: 0,
@@ -282,6 +328,19 @@ export class InboxComponent implements OnInit, AfterViewInit {
   };
   recentEmails: any[] = [];
   activeMenuId: string | null = null;
+
+  async generateBrief() {
+    this.briefLoading = true;
+    try {
+      const res = await this.api.getDailyBrief();
+      this.dailyBrief = res.summary;
+    } catch (e) {
+      console.error('Brief failed', e);
+    } finally {
+      this.loading = false; // Actually briefLoading
+      this.briefLoading = false;
+    }
+  }
 
   private donutChart?: Chart;
 
