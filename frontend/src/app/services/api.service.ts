@@ -75,6 +75,11 @@ export class ApiService {
     return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/messages/${id}`, { headers }));
   }
 
+  async getCalendarEvents() {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.get<any[]>(`${this.baseUrl}/calendar/events`, { headers }));
+  }
+
   async getAuditLogs(page: number = 1) {
     const headers = await this.getHeaders();
     return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/audit-logs?page=${page}`, { headers }));

@@ -122,3 +122,31 @@ calendarRouter.post('/create', requireAuth, async (req: AuthRequest, res) => {
         });
     }
 });
+/**
+ * Get upcoming events for the month
+ */
+calendarRouter.get('/events', requireAuth, async (req: AuthRequest, res) => {
+    try {
+        const userId = req.user?.id;
+        const { data: tokenData } = await supabase.from('user_tokens').select('*').eq('user_id', userId).single();
+        if (!tokenData?.calendar_token) return res.status(400).json({ error: 'Auth required' });
+
+        const calendar = getCalendarClient(tokenData.calendar_token, tokenData.refresh_token);
+        
+        const now = new Date();
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        const response = await calendar.events.list({
+            calendarId: 'primary',
+            timeMin: now.toISOString(),
+            timeMax: endOfMonth.toISOString(),
+            singleEvents: true,
+            orderBy: 'startTime'
+        });
+
+        res.json(response.data.items || []);
+    } catch (error: any) {
+        logger.error('Fetch calendar events error', { userId: req.user?.id, error: error.message });
+        res.status(500).json({ error: 'Failed to fetch calendar events' });
+    }
+});
