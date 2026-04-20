@@ -9,6 +9,10 @@ This guide outlines how to deploy the entire TrueAuth stack using free-tier serv
 - **Actions**:
   - Create a new project.
   - Go to **SQL Editor** and paste all migrations from `supabase/migrations/*.sql`.
+  - **Crucial Authentication Sync**:
+    - Go to **Authentication > URL Configuration**.
+    - Set **Site URL** to your production Vercel URL (e.g., `https://your-app.vercel.app`).
+    - Add `https://your-app.vercel.app/**` to the **Redirect URLs** list.
   - Go to **Authentication > Providers** and enable Google. Use the Client ID and Secret from your Google Cloud Console.
   - Add the Supabase Redirect URL to your Google Cloud Console "Authorized Redirect URIs".
 

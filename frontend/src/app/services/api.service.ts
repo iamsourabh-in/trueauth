@@ -11,8 +11,8 @@ export class ApiService {
   http = inject(HttpClient);
   supabase = inject(SupabaseService);
 
-  // The backend base URL - must include /api
-  baseUrl = 'http://localhost:3000/api';
+  // The backend base URL - sourced from environment config
+  baseUrl = environment.apiUrl;
 
   async getHeaders() {
     const token = await this.supabase.sessionToken;
