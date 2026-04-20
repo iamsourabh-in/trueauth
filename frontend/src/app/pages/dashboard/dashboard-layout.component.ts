@@ -1,11 +1,11 @@
-import { Component, inject, DestroyRef, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterOutlet } from '@angular/router';
+import { LucideAngularModule } from 'lucide-angular';
 import { SupabaseService } from '../../services/supabase.service';
 import { ThemeService } from '../../services/theme.service';
 import { ApiService } from '../../services/api.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { LucideAngularModule } from 'lucide-angular';
 
 interface NavItem {
   label: string;
@@ -19,10 +19,21 @@ interface NavItem {
   imports: [CommonModule, RouterOutlet, LucideAngularModule, DatePipe],
   template: `
     <div class="dash-shell">
+      <!-- Mobile Header -->
+      <header class="mobile-header">
+        <div class="sidebar-logo" (click)="router.navigate(['/dashboard/summary'])">
+          <img src="assets/logo.png" alt="TrueAuth Logo" class="main-logo">
+          <span>TrueAuth</span>
+        </div>
+        <button class="hamburger-btn" (click)="toggleMobileMenu()">
+          <lucide-icon [name]="mobileMenuOpen ? 'x' : 'menu'" [size]="20"></lucide-icon>
+        </button>
+      </header>
+
       <!-- Sidebar -->
-      <aside class="sidebar" [class.collapsed]="collapsed">
+      <aside class="sidebar" [class.collapsed]="collapsed" [class.mobile-open]="mobileMenuOpen">
         <!-- Logo -->
-        <div class="sidebar-header">
+        <div class="sidebar-header hide-mobile">
           <div class="sidebar-logo" (click)="router.navigate(['/dashboard/summary'])">
             <img src="assets/logo.png" alt="TrueAuth Logo" class="main-logo">
             <span *ngIf="!collapsed">TrueAuth</span>
@@ -33,7 +44,7 @@ interface NavItem {
         </div>
 
         <!-- User pill -->
-        <div class="user-pill" *ngIf="!collapsed && email">
+        <div class="user-pill" *ngIf="(!collapsed || mobileMenuOpen) && email">
           <div class="user-avatar">{{ initial }}</div>
           <div class="user-info">
             <span class="user-email">{{ email }}</span>
@@ -46,13 +57,13 @@ interface NavItem {
             *ngFor="let item of navItems"
             class="nav-item"
             [class.active]="router.url.startsWith(item.route)"
-            (click)="router.navigate([item.route])"
+            (click)="router.navigate([item.route]); toggleMobileMenu(false)"
             [title]="item.label"
           >
             <span class="nav-icon">
               <lucide-icon [name]="item.icon" [size]="18"></lucide-icon>
             </span>
-            <span class="nav-label" *ngIf="!collapsed">{{ item.label }}</span>
+            <span class="nav-label" *ngIf="!collapsed || mobileMenuOpen">{{ item.label }}</span>
           </button>
         </nav>
 
@@ -62,12 +73,12 @@ interface NavItem {
             <span class="nav-icon">
               <lucide-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18"></lucide-icon>
             </span>
-            <span class="nav-label" *ngIf="!collapsed">
+            <span class="nav-label" *ngIf="!collapsed || mobileMenuOpen">
               {{ theme.theme() === 'dark' ? 'Light mode' : 'Dark mode' }}
             </span>
           </button>
           
-          <button class="nav-item danger" (click)="purgeData()" title="Purge My Data" *ngIf="!collapsed">
+          <button class="nav-item danger hide-mobile" (click)="purgeData()" title="Purge My Data" *ngIf="!collapsed">
             <span class="nav-icon">
               <lucide-icon name="user-x" [size]="18"></lucide-icon>
             </span>
@@ -78,14 +89,17 @@ interface NavItem {
             <span class="nav-icon">
               <lucide-icon name="log-out" [size]="18"></lucide-icon>
             </span>
-            <span class="nav-label" *ngIf="!collapsed">Sign out</span>
+            <span class="nav-label" *ngIf="!collapsed || mobileMenuOpen">Sign out</span>
           </button>
         </div>
       </aside>
 
+      <!-- Overlay for mobile menu -->
+      <div class="sidebar-overlay" *ngIf="mobileMenuOpen" (click)="toggleMobileMenu(false)"></div>
+
       <!-- Main -->
       <main class="dash-main">
-        <header class="dash-topbar">
+        <header class="dash-topbar hide-mobile">
           <h2 class="topbar-title">{{ currentTitle }}</h2>
           <div class="topbar-right">
              <div class="topbar-time">{{ now | date:'EEE, MMM d · h:mm a' }}</div>
@@ -98,17 +112,26 @@ interface NavItem {
     </div>
   `,
   styles: [`
-    .dash-shell { display: flex; height: 100vh; overflow: hidden; background: var(--bg); }
+    .dash-shell { display: flex; height: 100vh; overflow: hidden; background: var(--bg); position: relative; }
+
+    /* Mobile Header */
+    .mobile-header { 
+      display: none; height: 60px; background: var(--surface); 
+      border-bottom: 1px solid var(--border); width: 100%;
+      align-items: center; justify-content: space-between; padding: 0 1rem;
+      position: absolute; top: 0; left: 0; z-index: 50;
+    }
+    .hamburger-btn { background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
 
     .sidebar {
       display: flex; flex-direction: column;
       width: 224px; min-width: 224px;
       background: var(--surface);
       border-right: 1px solid var(--border);
-      transition: width 0.22s ease, min-width 0.22s ease;
-      overflow: hidden;
+      transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), width 0.22s ease;
+      overflow: hidden; z-index: 100;
     }
-    .sidebar.collapsed { width: 60px; min-width: 60px; }
+    .sidebar.collapsed { width: 64px; min-width: 64px; }
 
     .sidebar-header {
       display: flex; align-items: center; justify-content: space-between;
@@ -120,14 +143,13 @@ interface NavItem {
       color: var(--text-primary);
       white-space: nowrap; cursor: pointer;
     }
-    .main-logo { height: 28px; width: auto; object-fit: contain; }
+    .main-logo { height: 28px; width: auto; }
     .collapse-btn {
       background: none; border: 1px solid var(--border); border-radius: 0.375rem;
       cursor: pointer; padding: 0.28rem; color: var(--text-secondary);
       display: flex; align-items: center; justify-content: center;
       transition: all 0.2s; flex-shrink: 0; margin-left: auto;
     }
-    .collapse-btn:hover { background: var(--surface2); color: var(--text-primary); }
 
     .user-pill {
       display: flex; align-items: center; gap: 0.6rem;
@@ -143,38 +165,48 @@ interface NavItem {
     }
     .user-email { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 130px; }
 
-    .sidebar-nav { flex: 1; padding: 0.5rem; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; overflow-x: hidden; }
-
+    .sidebar-nav { flex: 1; padding: 0.5rem; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
     .nav-item {
       display: flex; align-items: center; gap: 0.7rem;
       padding: 0.58rem 0.7rem; border-radius: 0.6rem;
       cursor: pointer; border: none; background: none;
       color: var(--text-secondary); font-size: 0.875rem; font-weight: 500;
       text-align: left; width: 100%; transition: all 0.14s ease;
-      white-space: nowrap; text-decoration: none; flex-shrink: 0;
+      white-space: nowrap;
     }
     .nav-item:hover { background: var(--surface2); color: var(--text-primary); }
     .nav-item.active { background: var(--accent-subtle); color: var(--accent); font-weight: 600; }
-    .nav-item.danger:hover { background: rgba(239,68,68,0.08); color: var(--danger); }
-
+    .nav-item.danger { color: var(--danger); }
     .nav-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .nav-label { flex: 1; }
 
-    .sidebar-footer { padding: 0.5rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 1px; }
+    .sidebar-footer { padding: 0.5rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
 
-    /* Main */
-    .dash-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-
-    .dash-topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1.5rem; height: 58px; min-height: 58px;
-      border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0;
-    }
-    .topbar-title { font-size: 0.975rem; font-weight: 700; color: var(--text-primary); }
-    .topbar-right { display: flex; align-items: center; gap: 1rem; }
-    .topbar-time { font-size: 0.78rem; color: var(--text-secondary); }
-
+    .dash-main { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
+    .dash-topbar { height: 58px; min-height: 58px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; }
+    .topbar-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+    .topbar-time { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+    
     .dash-content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+
+    .sidebar-overlay { 
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
+      z-index: 90; backdrop-filter: blur(2px);
+    }
+
+    .hide-mobile { display: flex; }
+
+    @media (max-width: 768px) {
+      .mobile-header { display: flex; }
+      .sidebar { 
+        position: fixed; transform: translateX(-100%); 
+        top: 0; bottom: 0; height: 100%; min-width: 260px; width: 260px;
+        box-shadow: 20px 0 50px rgba(0,0,0,0.1);
+      }
+      .sidebar.mobile-open { transform: translateX(0); }
+      .hide-mobile { display: none !important; }
+      .dash-main { margin-top: 60px; }
+      .dash-content { padding: 1rem; }
+    }
   `]
 })
 export class DashboardLayoutComponent implements OnInit {
@@ -188,6 +220,7 @@ export class DashboardLayoutComponent implements OnInit {
   initial = '';
   now = new Date();
   collapsed = false;
+  mobileMenuOpen = false;
 
   navItems: NavItem[] = [
     { label: 'Overview', route: '/dashboard/summary', icon: 'layout' },
@@ -209,6 +242,11 @@ export class DashboardLayoutComponent implements OnInit {
       this.email = u?.email ?? u?.user_metadata?.['email'] ?? '';
       this.initial = this.email.charAt(0).toUpperCase();
     });
+
+    // Auto-close menu on route change
+    this.router.events.subscribe(() => {
+      this.mobileMenuOpen = false;
+    });
   }
 
   async ngOnInit() {
@@ -219,17 +257,14 @@ export class DashboardLayoutComponent implements OnInit {
     }
   }
 
-  async purgeData() {
-    if (!confirm('Are you sure you want to permanently delete ALL your data from TrueAuth? This includes all synced emails, subscriptions, and logs. This action cannot be undone.')) {
-      return;
-    }
+  toggleMobileMenu(state?: boolean) {
+    this.mobileMenuOpen = state === undefined ? !this.mobileMenuOpen : state;
+  }
 
-    try {
-      await this.api.purgeData();
-      alert('Your data has been successfully deleted. You will now be signed out.');
-      await this.signOut();
-    } catch (e) {
-      alert('Failed to delete data. Please try again later.');
+  async purgeData() {
+    if (confirm('Are you sure? This will delete all collected emails and rules!')) {
+      await this.api.purgeUserData();
+      window.location.reload();
     }
   }
 

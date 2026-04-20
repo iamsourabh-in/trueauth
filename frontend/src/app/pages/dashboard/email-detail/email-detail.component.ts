@@ -168,6 +168,14 @@ import { LucideAngularModule } from 'lucide-angular';
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .detail-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .header-right { flex-direction: row-reverse; justify-content: space-between; width: 100%; border-top: 1px solid var(--border); padding-top: 1rem; }
+      .detail-title { font-size: 1.1rem; }
+      .detail-footer { flex-direction: column; }
+      .action-btn { justify-content: center; width: 100%; }
+    }
   `]
 })
 export class EmailDetailComponent implements OnInit {

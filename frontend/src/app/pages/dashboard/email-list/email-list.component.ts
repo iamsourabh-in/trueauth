@@ -160,6 +160,16 @@ import { LucideAngularModule } from 'lucide-angular';
     .badge.tag { background: var(--surface2); color: var(--text-secondary); border: 1px solid var(--border); }
 
     .empty-state { padding: 4rem 2rem; text-align: center; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+
+    @media (max-width: 640px) {
+      .email-item { padding: 0.75rem; gap: 0.6rem; }
+      .email-avatar { width: 32px; height: 32px; font-size: 0.7rem; }
+      .email-sender { max-width: 130px; font-size: 0.8rem; }
+      .email-date { font-size: 0.65rem; }
+      .email-subject { font-size: 0.85rem; }
+      .email-snippet { font-size: 0.75rem; }
+      .badge { font-size: 0.6rem; padding: 0.1rem 0.4rem; }
+    }
   `]
 })
 export class EmailListComponent implements OnInit {

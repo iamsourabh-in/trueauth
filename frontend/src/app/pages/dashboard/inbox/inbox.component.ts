@@ -73,6 +73,26 @@ Chart.register(...registerables);
         </div>
       </div>
 
+      <!-- AI Daily Brief (Moved up) -->
+      <div class="summary-action-box glass-card shadow-sm" *ngIf="!loading">
+         <div class="box-header">
+            <div class="header-info">
+               <h3 class="box-title">Daily Intelligent Brief</h3>
+               <p class="box-sub">Get a brief summary of today's key emails.</p>
+            </div>
+            <button class="btn-brief" (click)="generateBrief()" [disabled]="briefLoading">
+               <lucide-icon name="sparkles" [size]="16" *ngIf="!briefLoading"></lucide-icon>
+               <div class="spinner-tiny" *ngIf="briefLoading"></div>
+               <span>{{ briefLoading ? 'Analyzing...' : 'Summarize Today' }}</span>
+            </button>
+         </div>
+         
+         <div class="brief-content anim-fade-in" *ngIf="dailyBrief">
+            <lucide-icon name="quote-blue" [size]="20" class="quote-icon"></lucide-icon>
+            <p class="brief-text">{{ dailyBrief }}</p>
+         </div>
+      </div>
+
       <!-- Secondary Stats (Drafts & Starred) -->
       <div class="stats-row grid-2-wide">
         <div class="stat-card mini">
@@ -156,25 +176,6 @@ Chart.register(...registerables);
       </div>
 
       <!-- Actions -->
-      <div class="summary-action-box glass-card" *ngIf="!loading">
-         <div class="box-header">
-            <div class="header-info">
-               <h3 class="box-title">Daily Intelligent Brief</h3>
-               <p class="box-sub">Get a 2-sentence summary of today's key emails (payments, orders, and requests).</p>
-            </div>
-            <button class="btn-brief" (click)="generateBrief()" [disabled]="briefLoading">
-               <lucide-icon name="sparkles" [size]="16" *ngIf="!briefLoading"></lucide-icon>
-               <div class="spinner-tiny" *ngIf="briefLoading"></div>
-               <span>{{ briefLoading ? 'Analyzing...' : 'Summarize Today' }}</span>
-            </button>
-         </div>
-         
-         <div class="brief-content anim-fade-in" *ngIf="dailyBrief">
-            <lucide-icon name="quote-blue" [size]="20" class="quote-icon"></lucide-icon>
-            <p class="brief-text">{{ dailyBrief }}</p>
-         </div>
-      </div>
-
       <div class="action-row">
         <button class="btn-primary" (click)="refresh()" [disabled]="loading">
           <lucide-icon name="refresh-cw" [size]="15" color="white" [class.spin]="loading"></lucide-icon>
@@ -299,6 +300,18 @@ Chart.register(...registerables);
 
     .spin { animation: spin 1.2s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .stats-row.grid-4 { grid-template-columns: 1fr 1fr; }
+      .grid-2-wide { grid-template-columns: 1fr; }
+      .charts-row { grid-template-columns: 1fr; }
+      .box-header { flex-direction: column; align-items: flex-start; }
+      .btn-brief { width: 100%; margin-top: 1rem; }
+      .stat-value { font-size: 1.5rem; }
+    }
+    @media (max-width: 480px) {
+      .stats-row.grid-4 { grid-template-columns: 1fr; }
+    }
   `]
 })
 export class InboxComponent implements OnInit, AfterViewInit {
