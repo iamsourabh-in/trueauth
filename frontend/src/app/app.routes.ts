@@ -9,6 +9,7 @@ import { CleanupPageComponent } from './pages/dashboard/cleanup/cleanup.componen
 import { DraftPageComponent } from './pages/dashboard/draft/draft.component';
 import { CalendarPageComponent } from './pages/dashboard/calendar/calendar.component';
 import { AboutComponent } from './pages/about/about.component';
+import { AuditLogsComponent } from './pages/dashboard/audit-logs/audit-logs.component';
 import { PrivacyComponent } from './pages/privacy/privacy.component';
 import { authGuard, loginGuard } from './guards/auth.guard';
 
@@ -28,6 +29,7 @@ export const routes: Routes = [
       { path: 'cleanup',       component: CleanupPageComponent },
       { path: 'draft',         component: DraftPageComponent },
       { path: 'calendar',      component: CalendarPageComponent },
+      { path: 'activity-log',  component: AuditLogsComponent },
     ]
   },
   { path: 'about',   component: AboutComponent },

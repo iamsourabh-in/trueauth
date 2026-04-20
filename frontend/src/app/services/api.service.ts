@@ -75,6 +75,11 @@ export class ApiService {
     return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/messages/${id}`, { headers }));
   }
 
+  async getAuditLogs() {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.get<any[]>(`${this.baseUrl}/mailbox/audit-logs`, { headers }));
+  }
+
   async analyzeMessage(id: string) {
     const headers = await this.getHeaders();
     return firstValueFrom(this.http.post<any>(`${this.baseUrl}/mailbox/messages/${id}/analyze`, {}, { headers }));

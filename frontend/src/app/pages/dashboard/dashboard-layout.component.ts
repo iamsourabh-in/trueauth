@@ -196,6 +196,7 @@ export class DashboardLayoutComponent implements OnInit {
     { label: 'Cleanup Rules', route: '/dashboard/cleanup', icon: 'trash-2' },
     { label: 'AI Draft', route: '/dashboard/draft', icon: 'pen-box' },
     { label: 'Calendar', route: '/dashboard/calendar', icon: 'calendar' },
+    { label: 'Activity Log', route: '/dashboard/activity-log', icon: 'clipboard-check' },
   ];
 
   get currentTitle() {

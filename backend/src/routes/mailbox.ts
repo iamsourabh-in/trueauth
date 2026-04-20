@@ -492,3 +492,53 @@ mailboxRouter.post('/historical/resume', requireAuth, async (req: AuthRequest, r
     res.status(500).json({ error: 'Failed to resume scan' });
   }
 });
+
+/**
+ * Get unified audit logs (sync and cleanup)
+ */
+mailboxRouter.get('/audit-logs', requireAuth, async (req: AuthRequest, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ error: 'User not found' });
+
+        // Fetch sync logs
+        const { data: syncLogs } = await supabase
+            .from('sync_log')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        // Fetch cleanup logs
+        const { data: cleanupLogs } = await supabase
+            .from('cleanup_log')
+            .select('*')
+            .eq('user_id', userId)
+            .order('action_taken_at', { ascending: false })
+            .limit(20);
+
+        // Map and merge logs
+        const unifiedLogs = [
+            ...(syncLogs || []).map(l => ({
+                id: l.id,
+                type: 'sync',
+                details: `Synchronized ${l.emails_count} emails`,
+                status: l.status,
+                timestamp: l.created_at
+            })),
+            ...(cleanupLogs || []).map(l => ({
+                id: l.id,
+                type: 'cleanup',
+                details: `${l.action_type.replace(/_/g, ' ').toUpperCase()}`,
+                status: l.status,
+                timestamp: l.action_taken_at,
+                metadata: l.metadata
+            }))
+        ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        res.json(unifiedLogs);
+    } catch (error: any) {
+        logger.error('Audit logs error', { error: error.message });
+        res.status(500).json({ error: 'Failed to fetch audit logs' });
+    }
+});
