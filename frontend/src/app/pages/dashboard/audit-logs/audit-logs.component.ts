@@ -14,6 +14,10 @@ import { LucideAngularModule } from 'lucide-angular';
           <h2 class="page-title">Activity Audit Trail</h2>
           <p class="page-sub">Comprehensive history of synchronization and automated cleanup actions.</p>
         </div>
+        <button class="btn-danger-outline" (click)="clearLogs()" [disabled]="loading || (cleanupLogs.length === 0 && syncLogs.length === 0)">
+           <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+           <span>Clear History</span>
+        </button>
       </div>
 
       <!-- Part 1: Sync Summary Cards -->
@@ -111,8 +115,19 @@ import { LucideAngularModule } from 'lucide-angular';
   `,
   styles: [`
     .audit-page { display: flex; flex-direction: column; gap: 1.25rem; padding-bottom: 3rem; }
+    .page-header { display: flex; justify-content: space-between; align-items: flex-start; }
     .page-title { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.25rem; }
     .page-sub { font-size: 0.875rem; color: var(--text-secondary); }
+
+    .btn-danger-outline {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.6rem 1rem; border-radius: 0.75rem;
+      border: 1px solid var(--danger); background: transparent;
+      color: var(--danger); font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-danger-outline:hover:not(:disabled) { background: var(--danger); color: white; }
+    .btn-danger-outline:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .section-title { 
       display: flex; align-items: center; gap: 0.6rem; 
@@ -227,5 +242,23 @@ export class AuditLogsComponent implements OnInit {
   async changePage(page: number) {
     if (page < 1) return;
     await this.loadLogs(page);
+  }
+
+  async clearLogs() {
+    if (!confirm('Are you sure you want to clear your entire activity history? This action cannot be undone.')) return;
+    
+    this.loading = true;
+    try {
+      await this.api.clearAuditLogs();
+      this.syncLogs = [];
+      this.cleanupLogs = [];
+      this.totalCleanup = 0;
+      this.currentPage = 1;
+      this.hasMore = false;
+    } catch (err) {
+      console.error('Failed to clear logs', err);
+    } finally {
+      this.loading = false;
+    }
   }
 }

@@ -537,3 +537,22 @@ mailboxRouter.get('/audit-logs', requireAuth, async (req: AuthRequest, res) => {
         res.status(500).json({ error: 'Failed to fetch audit logs' });
     }
 });
+
+/**
+ * Clear audit logs for the user
+ */
+mailboxRouter.delete('/audit-logs', requireAuth, async (req: AuthRequest, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ error: 'User not found' });
+
+        // Delete from both log tables
+        await supabase.from('cleanup_log').delete().eq('user_id', userId);
+        await supabase.from('sync_log').delete().eq('user_id', userId);
+
+        res.json({ success: true, message: 'Audit logs cleared successfully' });
+    } catch (error: any) {
+        logger.error('Clear audit logs error', { error: error.message });
+        res.status(500).json({ error: 'Failed to clear audit logs' });
+    }
+});
