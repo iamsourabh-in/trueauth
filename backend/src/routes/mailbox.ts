@@ -4,6 +4,7 @@ import { getGmailClient } from '../config/google';
 import { supabase } from '../config/supabase';
 import { createLogger, requestLogMeta } from '../lib/logger';
 import { identifyCategory, analyzeEmailWithAI } from '../services/email.analysis.service';
+import { requirePremium } from '../middleware/premium';
 import { syncQueue } from '../config/bull';
 import { processHistoricalSync } from '../jobs/historical-sync.job';
 
@@ -554,7 +555,7 @@ mailboxRouter.post('/historical/resume', requireAuth, async (req: AuthRequest, r
 /**
  * Get unified audit logs (sync and cleanup)
  */
-mailboxRouter.get('/audit-logs', requireAuth, async (req: AuthRequest, res) => {
+mailboxRouter.get('/audit-logs', requireAuth, requirePremium, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.id;
     const page = parseInt(req.query.page as string) || 1;

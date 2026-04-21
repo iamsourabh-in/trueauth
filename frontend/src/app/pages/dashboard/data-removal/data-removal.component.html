@@ -4,12 +4,31 @@
           <h2 class="page-title">Personal Data Removal</h2>
           <p class="page-sub">Scrub your digital footprint from data brokers and public databases.</p>
         </div>
-        <button class="btn-primary" (click)="triggerScan()" [disabled]="syncing">
+        <button class="btn-primary" (click)="triggerScan()" [disabled]="syncing || !isPremium">
           <lucide-icon name="shield-check" [size]="15" color="white" [class.spin]="syncing"></lucide-icon>
           {{ syncing ? 'Processing...' : 'Start Scan & Remove' }}
         </button>
       </div>
 
+      <!-- Premium Gate -->
+      <div class="premium-gate" *ngIf="!isPremium">
+        <div class="gate-card">
+          <lucide-icon name="crown" [size]="48" class="gate-icon"></lucide-icon>
+          <h3>Premium Feature</h3>
+          <p>Data Removal is available exclusively to Premium subscribers. Upgrade to automate CCPA/GDPR takedown requests to major data brokers.</p>
+          <div class="gate-price">
+            <span class="price-amount">$10</span>
+            <span class="price-period">/ year</span>
+          </div>
+          <p class="gate-price-alt">or &#8377;1000 / year</p>
+          <button class="gate-btn" (click)="upgradeToPremium()">
+            <lucide-icon name="crown" [size]="18"></lucide-icon>
+            Upgrade to Premium
+          </button>
+        </div>
+      </div>
+
+      <ng-container *ngIf="isPremium">
       <div class="grid-container">
         <!-- Main Column -->
         <div class="main-column">
@@ -158,4 +177,5 @@
           </table>
         </div>
       </div>
+      </ng-container>
     </div>

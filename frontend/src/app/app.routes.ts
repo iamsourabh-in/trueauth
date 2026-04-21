@@ -12,6 +12,7 @@ import { AboutComponent } from './pages/about/about.component';
 import { AuditLogsComponent } from './pages/dashboard/audit-logs/audit-logs.component';
 import { PrivacyComponent } from './pages/privacy/privacy.component';
 import { DataRemovalComponent } from './pages/dashboard/data-removal/data-removal.component';
+import { PricingComponent } from './pages/pricing/pricing.component';
 import { authGuard, loginGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -36,5 +37,6 @@ export const routes: Routes = [
   },
   { path: 'about', component: AboutComponent },
   { path: 'privacy', component: PrivacyComponent },
+  { path: 'pricing', component: PricingComponent },
   { path: '**', redirectTo: '/login' }
 ];

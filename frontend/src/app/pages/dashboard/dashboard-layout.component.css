@@ -48,6 +48,24 @@
     .nav-btn.active { background: var(--accent-subtle); color: var(--accent); font-weight: 700; }
     .nav-btn.danger { color: var(--danger); }
 
+    .premium-lock { color: var(--text-muted); margin-left: auto; opacity: 0.5; }
+
+    .upgrade-btn {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+      border: none; cursor: pointer; width: 100%; text-align: left;
+      border-radius: 10px; font-size: 0.85rem; font-weight: 700;
+      background: linear-gradient(135deg, #f59e0b, #ef4444); color: white;
+      transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .upgrade-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
+
+    .premium-badge {
+      display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem;
+      background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(234,179,8,0.1));
+      color: #d97706; border-radius: 10px; font-size: 0.8rem; font-weight: 800;
+      margin-bottom: 0.35rem;
+    }
+
     .side-footer { padding: 0.5rem; border-top: 1px solid var(--border); }
 
     .drawer-overlay {

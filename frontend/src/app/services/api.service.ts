@@ -162,4 +162,15 @@ export class ApiService {
     const headers = await this.getHeaders();
     return firstValueFrom(this.http.post<any>(`${this.baseUrl}/mailbox/historical/resume`, {}, { headers }));
   }
+
+  // Billing / Subscription
+  async getPlan() {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.get<any>(`${this.baseUrl}/billing/plan`, { headers }));
+  }
+
+  async purchasePremium() {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.post<any>(`${this.baseUrl}/billing/purchase`, {}, { headers }));
+  }
 }

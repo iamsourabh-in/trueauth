@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { requirePremium } from '../middleware/premium';
 import { supabase } from '../config/supabase';
 import { cleanupQueue } from '../config/bull';
 import { processCleanup } from '../jobs/cleanup.job';
@@ -38,7 +39,7 @@ export const cleanupRouter = Router();
  *       401:
  *         description: Unauthorized
  */
-cleanupRouter.post('/trigger', requireAuth, async (req: AuthRequest, res) => {
+cleanupRouter.post('/trigger', requireAuth, requirePremium, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.id;
     const { action, customQuery } = req.body; // e.g. 'archive-promotions' or 'bulk-delete'

@@ -16,9 +16,27 @@ export class DataRemovalComponent implements OnInit {
   identities: any[] = [];
   logs: any[] = [];
   syncing = false;
+  isPremium = false;
 
   async ngOnInit() {
-    await this.loadStatus();
+    try {
+      const planRes = await this.api.getPlan();
+      this.isPremium = planRes.plan === 'premium';
+    } catch {}
+
+    if (this.isPremium) {
+      await this.loadStatus();
+    }
+  }
+
+  async upgradeToPremium() {
+    try {
+      await this.api.purchasePremium();
+      this.isPremium = true;
+      await this.loadStatus();
+    } catch (e) {
+      console.error('Purchase failed', e);
+    }
   }
 
   async loadStatus() {

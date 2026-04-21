@@ -19,13 +19,31 @@ export class CleanupPageComponent implements OnInit {
   log: { time: Date; msg: string; ok: boolean }[] = [];
   bulkQuery = '';
   senders: string[] = [];
+  isPremium = false;
 
   async ngOnInit() {
     try {
-      const res = await this.api.getEmailSenders();
-      this.senders = res.senders || [];
+      const planRes = await this.api.getPlan();
+      this.isPremium = planRes.plan === 'premium';
+    } catch {}
+
+    if (this.isPremium) {
+      try {
+        const res = await this.api.getEmailSenders();
+        this.senders = res.senders || [];
+      } catch (e) {
+        console.error('Failed to load senders for autocomplete', e);
+      }
+    }
+  }
+
+  async upgradeToPremium() {
+    try {
+      await this.api.purchasePremium();
+      this.isPremium = true;
+      await this.ngOnInit();
     } catch (e) {
-      console.error('Failed to load senders for autocomplete', e);
+      console.error('Purchase failed', e);
     }
   }
 

@@ -10,6 +10,26 @@
         </button>
       </div>
 
+      <!-- Premium Gate -->
+      <div class="premium-gate" *ngIf="!isPremium">
+        <div class="gate-card">
+          <lucide-icon name="crown" [size]="48" class="gate-icon"></lucide-icon>
+          <h3>Premium Feature</h3>
+          <p>Activity Audit Logs are available exclusively to Premium subscribers. Upgrade to get full visibility into your automated cleanup and sync history.</p>
+          <div class="gate-price">
+            <span class="price-amount">$10</span>
+            <span class="price-period">/ year</span>
+          </div>
+          <p class="gate-price-alt">or &#8377;1000 / year</p>
+          <button class="gate-btn" (click)="upgradeToPremium()">
+            <lucide-icon name="crown" [size]="18"></lucide-icon>
+            Upgrade to Premium
+          </button>
+        </div>
+      </div>
+
+      <ng-container *ngIf="isPremium">
+
       <!-- Part 1: Sync Summary Cards -->
       <div class="section-title">
         <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
@@ -101,4 +121,5 @@
             </div>
          </div>
       </div>
+      </ng-container>
     </div>

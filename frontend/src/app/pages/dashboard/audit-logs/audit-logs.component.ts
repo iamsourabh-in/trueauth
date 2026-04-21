@@ -20,9 +20,29 @@ export class AuditLogsComponent implements OnInit {
   currentPage = 1;
   totalCleanup = 0;
   hasMore = false;
+  isPremium = false;
 
   async ngOnInit() {
-    await this.loadLogs();
+    try {
+      const planRes = await this.api.getPlan();
+      this.isPremium = planRes.plan === 'premium';
+    } catch {}
+
+    if (this.isPremium) {
+      await this.loadLogs();
+    } else {
+      this.loading = false;
+    }
+  }
+
+  async upgradeToPremium() {
+    try {
+      await this.api.purchasePremium();
+      this.isPremium = true;
+      await this.loadLogs();
+    } catch (e) {
+      console.error('Purchase failed', e);
+    }
   }
 
   async loadLogs(page: number = 1) {

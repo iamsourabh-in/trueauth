@@ -1,0 +1,71 @@
+<div class="gradient-bg"><div class="blob3"></div></div>
+
+<nav class="login-nav">
+  <div class="nav-brand" (click)="router.navigate(['/login'])">
+    <img src="assets/logo.png" alt="TrueAuth Logo" class="brand-logo">
+    <span class="nav-wordmark">TrueAuth</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:.5rem;">
+    <button class="nav-ghost" (click)="router.navigate(['/about'])">About</button>
+    <button class="nav-ghost" (click)="router.navigate(['/privacy'])">Privacy</button>
+    <button class="theme-toggle" (click)="theme.toggle()">
+      <lucide-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18"></lucide-icon>
+    </button>
+  </div>
+</nav>
+
+<div class="pricing-page">
+  <div class="pricing-header">
+    <span class="badge-pill">Simple Pricing</span>
+    <h1>Choose your plan</h1>
+    <p>Start free. Upgrade when you need the power tools.</p>
+  </div>
+
+  <div class="pricing-grid">
+    <!-- FREE -->
+    <div class="plan-card">
+      <div class="plan-header">
+        <h2>Free</h2>
+        <div class="price">
+          <span class="amount">$0</span>
+          <span class="period">/ forever</span>
+        </div>
+        <p class="plan-desc">Perfect for getting started with inbox intelligence.</p>
+      </div>
+      <ul class="feature-list">
+        <li *ngFor="let f of freeFeatures">
+          <lucide-icon name="check" [size]="16" class="check-icon"></lucide-icon>
+          {{ f }}
+        </li>
+      </ul>
+      <button class="cta-btn outline" (click)="router.navigate(['/login'])">Get Started</button>
+    </div>
+
+    <!-- PREMIUM -->
+    <div class="plan-card featured">
+      <div class="popular-tag">Most Popular</div>
+      <div class="plan-header">
+        <h2>Premium</h2>
+        <div class="price">
+          <span class="amount">$10</span>
+          <span class="period">/ year</span>
+        </div>
+        <p class="plan-sub-price">or &#8377;1000 / year</p>
+        <p class="plan-desc">Unlock cleanup automation, data removal & full audit trail.</p>
+      </div>
+      <ul class="feature-list">
+        <li *ngFor="let f of premiumFeatures">
+          <lucide-icon name="check" [size]="16" class="check-icon premium"></lucide-icon>
+          {{ f }}
+        </li>
+      </ul>
+      <button class="cta-btn primary" (click)="router.navigate(['/login'])">Upgrade Now</button>
+    </div>
+  </div>
+</div>
+
+<footer class="pricing-footer">
+  <span>&copy; 2025 TrueAuth</span>
+  <button class="footer-link" (click)="router.navigate(['/privacy'])">Privacy</button>
+  <button class="footer-link" (click)="router.navigate(['/about'])">About</button>
+</footer>

@@ -11,6 +11,7 @@ interface NavItem {
   label: string;
   route: string;
   icon: string;
+  premium?: boolean;
 }
 
 @Component({
@@ -32,16 +33,18 @@ export class DashboardLayoutComponent implements OnInit {
   now = new Date();
   collapsed = false;
   mobileMenuOpen = false;
+  isPremium = false;
+  planExpiry = '';
 
   navItems: NavItem[] = [
     { label: 'Overview', route: '/dashboard/summary', icon: 'layout' },
     { label: 'Inbox', route: '/dashboard/inbox', icon: 'inbox' },
     { label: 'Subscriptions', route: '/dashboard/subscriptions', icon: 'bell' },
-    { label: 'Cleanup Rules', route: '/dashboard/cleanup', icon: 'trash-2' },
+    { label: 'Cleanup Rules', route: '/dashboard/cleanup', icon: 'trash-2', premium: true },
     { label: 'AI Draft', route: '/dashboard/draft', icon: 'pen-box' },
     { label: 'Calendar', route: '/dashboard/calendar', icon: 'calendar' },
-    { label: 'Log', route: '/dashboard/activity-log', icon: 'clipboard-check' },
-    { label: 'Data Removal', route: '/dashboard/data-removal', icon: 'shield-off' },
+    { label: 'Log', route: '/dashboard/activity-log', icon: 'clipboard-check', premium: true },
+    { label: 'Data Removal', route: '/dashboard/data-removal', icon: 'shield-off', premium: true },
   ];
 
   get currentTitle() {
@@ -65,6 +68,17 @@ export class DashboardLayoutComponent implements OnInit {
     } catch (e) {
       console.error('Failed to sync Google tokens from session', e);
     }
+    await this.loadPlan();
+  }
+
+  async loadPlan() {
+    try {
+      const res = await this.api.getPlan();
+      this.isPremium = res.plan === 'premium';
+      this.planExpiry = res.expires_at || '';
+    } catch (e) {
+      console.error('Failed to load plan', e);
+    }
   }
 
   toggleMobileMenu(state?: boolean) {
@@ -83,3 +97,4 @@ export class DashboardLayoutComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 }
+

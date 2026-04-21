@@ -6,6 +6,25 @@
         </div>
       </div>
 
+      <!-- Premium Gate -->
+      <div class="premium-gate" *ngIf="!isPremium">
+        <div class="gate-card">
+          <lucide-icon name="crown" [size]="48" class="gate-icon"></lucide-icon>
+          <h3>Premium Feature</h3>
+          <p>Cleanup Rules are available exclusively to Premium subscribers. Upgrade to unlock automated email cleanup, bulk delete, and more.</p>
+          <div class="gate-price">
+            <span class="price-amount">$10</span>
+            <span class="price-period">/ year</span>
+          </div>
+          <p class="gate-price-alt">or &#8377;1000 / year</p>
+          <button class="gate-btn" (click)="upgradeToPremium()">
+            <lucide-icon name="crown" [size]="18"></lucide-icon>
+            Upgrade to Premium
+          </button>
+        </div>
+      </div>
+
+      <ng-container *ngIf="isPremium">
       <div class="rules-grid">
         <div class="rule-card" *ngFor="let r of rules">
           <div class="rule-icon" [style.background]="r.color">
@@ -75,4 +94,5 @@
           </div>
         </div>
       </div>
+      </ng-container>
     </div>

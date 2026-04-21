@@ -8,7 +8,8 @@
         <span class="nav-wordmark">TrueAuth</span>
       </div>
       <div style="display:flex;align-items:center;gap:.5rem;">
-        <button class="nav-ghost" (click)="router.navigate(['/about'])">About</button>
+    <button class="nav-ghost" (click)="router.navigate(['/about'])">About</button>
+        <button class="nav-ghost" (click)="router.navigate(['/pricing'])">Pricing</button>
         <button class="nav-ghost" (click)="router.navigate(['/privacy'])">Privacy</button>
         <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.theme() === 'dark' ? 'Switch to light' : 'Switch to dark'">
            <lucide-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18"></lucide-icon>

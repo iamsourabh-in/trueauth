@@ -14,6 +14,7 @@ import { draftRouter } from './routes/draft';
 import { calendarRouter } from './routes/calendar';
 import { authRouter } from './routes/auth';
 import { removalRouter } from './routes/removal';
+import { billingRouter } from './routes/billing';
 
 
 declare global {
@@ -62,6 +63,7 @@ app.use('/api/cleanup', cleanupRouter);
 app.use('/api/draft', draftRouter);
 app.use('/api/calendar', calendarRouter);
 app.use('/api/removal', removalRouter);
+app.use('/api/billing', billingRouter);
 
 app.get('/api', (req, res) => {
   res.json({

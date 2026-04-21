@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { requirePremium } from '../middleware/premium';
 import { supabase } from '../config/supabase';
 import { removalQueue } from '../config/bull';
 import { processRemoval } from '../jobs/removal.job';
@@ -14,7 +15,7 @@ export const removalRouter = Router();
 /**
  * Get Brokers and Removal Statuses
  */
-removalRouter.get('/status', requireAuth, async (req: AuthRequest, res) => {
+removalRouter.get('/status', requireAuth, requirePremium, async (req: AuthRequest, res) => {
     try {
         const userId = req.user?.id;
         if (!userId) return res.status(401).json({ error: 'User not found' });
@@ -53,7 +54,7 @@ removalRouter.get('/status', requireAuth, async (req: AuthRequest, res) => {
 /**
  * Save an Identity token
  */
-removalRouter.post('/identity', requireAuth, async (req: AuthRequest, res) => {
+removalRouter.post('/identity', requireAuth, requirePremium, async (req: AuthRequest, res) => {
     try {
         const userId = req.user?.id;
         const { type, value } = req.body;
@@ -75,7 +76,7 @@ removalRouter.post('/identity', requireAuth, async (req: AuthRequest, res) => {
 /**
  * Trigger the Data Removal Background Scan
  */
-removalRouter.post('/trigger', requireAuth, async (req: AuthRequest, res) => {
+removalRouter.post('/trigger', requireAuth, requirePremium, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'User not found' });
