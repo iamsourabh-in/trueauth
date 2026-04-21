@@ -218,10 +218,14 @@ mailboxRouter.get('/emails', requireAuth, async (req: AuthRequest, res) => {
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
+    const search = req.query.search as string;
+    const categoriesStr = req.query.categories as string;
     const offset = (page - 1) * limit;
 
-    // 1. If it's the first page, try Redis Cache first
-    if (page === 1) {
+    const hasFilters = !!search || !!categoriesStr;
+
+    // 1. If it's the first page and no filters, try Redis Cache first
+    if (page === 1 && !hasFilters) {
       const { getCachedEmails } = await import('../services/email.storage.service');
       const cached = await getCachedEmails(userId);
       if (cached.length >= limit) {
@@ -230,12 +234,25 @@ mailboxRouter.get('/emails', requireAuth, async (req: AuthRequest, res) => {
     }
 
     // 2. Fetch from DB with pagination
-    const { data, error, count } = await supabase
+    let query = supabase
       .from('emails')
       .select('*', { count: 'exact' })
       .eq('user_id', userId)
       .order('received_at', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    if (categoriesStr) {
+      const categories = categoriesStr.split(',').filter(Boolean);
+      if (categories.length > 0) {
+        query = query.in('category', categories);
+      }
+    }
+
+    if (search) {
+      query = query.or(`subject.ilike.%${search}%,sender.ilike.%${search}%,snippet.ilike.%${search}%`);
+    }
+
+    const { data, error, count } = await query;
 
     if (error) throw error;
     const emails = data || [];
@@ -249,6 +266,30 @@ mailboxRouter.get('/emails', requireAuth, async (req: AuthRequest, res) => {
   } catch (error: any) {
     logger.error('Get emails error', { ...requestLogMeta(req), error: error.message });
     res.status(500).json({ error: 'Failed to fetch emails' });
+  }
+});
+
+/**
+ * Get distinct categories for the user
+ */
+mailboxRouter.get('/categories', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'User not found' });
+    
+    const { data, error } = await supabase
+      .from('emails')
+      .select('category')
+      .eq('user_id', userId)
+      .neq('category', null);
+      
+    if (error) throw error;
+    
+    const uniqueCategories = [...new Set(data.map(d => d.category))].filter(Boolean);
+    res.json({ categories: uniqueCategories });
+  } catch (error: any) {
+    logger.error('Get categories error', { error: error.message });
+    res.status(500).json({ error: 'Failed to fetch categories' });
   }
 });
 

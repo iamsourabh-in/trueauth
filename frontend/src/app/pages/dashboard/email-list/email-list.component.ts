@@ -21,6 +21,36 @@ import { LucideAngularModule } from 'lucide-angular';
         </button>
       </div>
 
+      <!-- Filters -->
+      <div class="filters-bar">
+        <div class="search-box">
+          <lucide-icon name="search" [size]="16" class="search-icon"></lucide-icon>
+          <input type="text" placeholder="Search emails..." [value]="searchQuery" (input)="onSearch($event)">
+        </div>
+        
+        <div class="dropdown-container">
+          <button class="filter-btn" (click)="toggleFilterMenu($event)">
+            <lucide-icon name="filter" [size]="16"></lucide-icon>
+            <span>Filters</span>
+            <span class="badge-count" *ngIf="selectedCategories.size > 0">{{ selectedCategories.size }}</span>
+          </button>
+          
+          <div class="filter-dropdown" *ngIf="filterMenuOpen" (click)="$event.stopPropagation()">
+            <div class="filter-header">
+               <span>Categories</span>
+               <button class="clear-btn" *ngIf="selectedCategories.size > 0" (click)="clearFilters()">Clear</button>
+            </div>
+            <div class="filter-options">
+               <label class="checkbox-label" *ngFor="let cat of availableCategories">
+                 <input type="checkbox" [checked]="selectedCategories.has(cat)" (change)="toggleCategory(cat)">
+                 <span class="check-text">{{ cat }}</span>
+               </label>
+               <div class="no-cats" *ngIf="!availableCategories.length">No categories found</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Loading State -->
       <div class="loading-state" *ngIf="loading && !emails.length">
         <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5,6]"></div>
@@ -98,6 +128,26 @@ import { LucideAngularModule } from 'lucide-angular';
     .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent); color: white; border: none; border-radius: 0.625rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; padding: 0.65rem 1.25rem; transition: all 0.2s; }
     .btn-secondary { display: flex; align-items: center; justify-content: center; width: 100%; padding: 0.8rem; background: var(--surface); border: 1px dashed var(--border); border-radius: 0.75rem; color: var(--text-secondary); font-weight: 600; cursor: pointer; transition: all 0.2s; }
     .btn-secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+
+    .filters-bar { display: flex; gap: 1rem; margin-bottom: 0.5rem; align-items: center; position: relative; z-index: 50; }
+    .search-box { flex: 1; position: relative; }
+    .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+    .search-box input { width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; border-radius: 0.6rem; border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font-size: 0.9rem; transition: all 0.2s; }
+    .search-box input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle); }
+    
+    .dropdown-container { position: relative; }
+    .filter-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border-radius: 0.6rem; border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--surface2); }
+    .badge-count { background: var(--accent); color: white; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 12px; font-weight: 700; margin-left: 0.2rem; }
+    
+    .filter-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 0.8rem; padding: 1rem; width: 220px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); animation: fadeIn 0.15s ease-out; z-index: 1000; }
+    .filter-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.5rem; font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+    .clear-btn { background: none; border: none; font-size: 0.75rem; color: var(--accent); cursor: pointer; font-weight: 600; }
+    .filter-options { display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto; }
+    .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; color: var(--text-secondary); text-transform: capitalize; }
+    .checkbox-label:hover { color: var(--text-primary); }
+    .check-text { font-weight: 500; }
+    .no-cats { font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
 
     .pagination-area { padding: 1rem 0; }
 
@@ -183,19 +233,67 @@ export class EmailListComponent implements OnInit {
   currentPage = 1;
   hasMore = false;
 
+  searchQuery = '';
+  selectedCategories = new Set<string>();
+  availableCategories: string[] = [];
+  filterMenuOpen = false;
+  searchTimeout: any;
+
   @HostListener('document:click')
   closeMenus() {
     this.activeMenuId = null;
+    this.filterMenuOpen = false;
   }
 
   async ngOnInit() {
+    await this.fetchCategories();
     await this.load();
+  }
+
+  async fetchCategories() {
+    try {
+      const res = await this.api.getEmailCategories();
+      this.availableCategories = res.categories || [];
+    } catch { }
+  }
+
+  toggleFilterMenu(event: Event) {
+    event.stopPropagation();
+    this.filterMenuOpen = !this.filterMenuOpen;
+    this.activeMenuId = null;
+  }
+
+  toggleCategory(cat: string) {
+    if (this.selectedCategories.has(cat)) {
+      this.selectedCategories.delete(cat);
+    } else {
+      this.selectedCategories.add(cat);
+    }
+    this.load(1);
+  }
+
+  clearFilters() {
+    this.selectedCategories.clear();
+    this.load(1);
+  }
+
+  onSearch(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchQuery = value;
+    if (this.searchTimeout) clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => {
+      this.load(1);
+    }, 400); // 400ms debounce
   }
 
   async load(page: number = 1) {
     if (page === 1) this.loading = true;
     try {
-      const res = await this.api.getEmails(page);
+      const catsArray = Array.from(this.selectedCategories);
+      const limit = page === 1 && (this.searchQuery || catsArray.length) ? 50 : 50; 
+      // ALWAYS load batches of 50 regardless. We could change the first load limit if we wanted, but 50 is fine.
+      const res = await this.api.getEmails(page, 50, this.searchQuery, catsArray);
+      
       if (page === 1) {
         this.emails = res.emails || [];
       } else {

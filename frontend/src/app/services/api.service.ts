@@ -105,9 +105,21 @@ export class ApiService {
     return firstValueFrom(this.http.post<any>(`${this.baseUrl}/mailbox/sync`, {}, { headers }));
   }
 
-  async getEmails(page: number = 1, limit: number = 50) {
+  async getEmailCategories() {
     const headers = await this.getHeaders();
-    return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/emails?page=${page}&limit=${limit}`, { headers }));
+    return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/categories`, { headers }));
+  }
+
+  async getEmails(page: number = 1, limit: number = 50, search: string = '', categories: string[] = []) {
+    const headers = await this.getHeaders();
+    let url = `${this.baseUrl}/mailbox/emails?page=${page}&limit=${limit}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    if (categories && categories.length > 0) {
+      url += `&categories=${encodeURIComponent(categories.join(','))}`;
+    }
+    return firstValueFrom(this.http.get<any>(url, { headers }));
   }
 
   async deleteMessage(messageId: string) {

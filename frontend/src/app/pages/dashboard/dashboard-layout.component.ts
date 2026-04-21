@@ -215,6 +215,7 @@ export class DashboardLayoutComponent implements OnInit {
     { label: 'AI Draft', route: '/dashboard/draft', icon: 'pen-box' },
     { label: 'Calendar', route: '/dashboard/calendar', icon: 'calendar' },
     { label: 'Log', route: '/dashboard/activity-log', icon: 'clipboard-check' },
+    { label: 'Data Removal', route: '/dashboard/data-removal', icon: 'shield-off' },
   ];
 
   get currentTitle() {
