@@ -89,3 +89,17 @@
     .support-content h4 { margin: 0 0 0.25rem 0; font-size: 1.05rem; font-weight: 800; }
     .support-content p { margin: 0 0 0.5rem 0; font-size: 0.85rem; opacity: 0.9; }
     .support-tel { display: inline-block; font-size: 1.25rem; font-weight: 900; color: white; text-decoration: none; }
+
+    /* Logs Table */
+    .logs-card { margin-top: 1.5rem; border-top: 1px solid var(--border); }
+    .table-responsive { overflow-x: auto; }
+    .logs-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .logs-table th { padding: 1rem 1.25rem; font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border); background: var(--surface2); }
+    .logs-table td { padding: 1rem 1.25rem; font-size: 0.85rem; color: var(--text-primary); border-bottom: 1px solid var(--border); }
+    .logs-table tr:last-child td { border-bottom: none; }
+    .time-col { font-family: monospace; color: var(--text-muted); }
+    .broker-badge { font-weight: 700; color: var(--text-primary); text-transform: capitalize; background: var(--surface2); padding: 0.2rem 0.6rem; border-radius: 0.5rem; border: 1px solid var(--border);}
+    .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+    .status-badge.sent { background: var(--accent-subtle); color: var(--accent); }
+    .status-badge.completed { background: rgba(34,197,94,0.1); color: var(--success); }
+    .status-badge.failed { background: rgba(239, 68, 68, 0.1); color: var(--danger); }

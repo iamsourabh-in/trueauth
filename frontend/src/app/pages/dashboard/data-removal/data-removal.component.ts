@@ -1,12 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
 import { ApiService } from '../../../services/api.service';
 
 @Component({
   selector: 'app-data-removal',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideAngularModule, DatePipe],
   templateUrl: './data-removal.component.html',
   styleUrl: './data-removal.component.css'
 })
@@ -14,6 +14,7 @@ export class DataRemovalComponent implements OnInit {
   api = inject(ApiService);
   brokers: any[] = [];
   identities: any[] = [];
+  logs: any[] = [];
   syncing = false;
 
   async ngOnInit() {
@@ -24,6 +25,7 @@ export class DataRemovalComponent implements OnInit {
     try {
       const res = await this.api.getRemovalStatus();
       this.brokers = res.statuses || [];
+      this.logs = res.logs || [];
     } catch (e) {
       console.error(e);
     }

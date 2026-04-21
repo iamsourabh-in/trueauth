@@ -129,4 +129,33 @@
 
         </div>
       </div>
+
+      <!-- Logs Table -->
+      <div class="card logs-card" *ngIf="logs && logs.length > 0">
+        <div class="card-header-compact">
+          <h3>Request Audit Logs</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Date Sent</th>
+                <th>Data Broker</th>
+                <th>Operation Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let log of logs">
+                <td class="time-col">{{ log.created_at | date:'MMM d, y, h:mm a' }}</td>
+                <td><span class="broker-badge">{{ log.broker_id }}</span></td>
+                <td>
+                   <span class="status-badge" [ngClass]="log.status">
+                      {{ log.status }}
+                   </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>

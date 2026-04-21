@@ -44,7 +44,7 @@ removalRouter.get('/status', requireAuth, async (req: AuthRequest, res) => {
              };
         });
 
-        res.json({ statuses: statusResponse });
+        res.json({ statuses: statusResponse, logs: logs });
     } catch (e: any) {
         res.status(500).json({ error: e.message });
     }
