@@ -1,0 +1,170 @@
+<div class="inbox-page">
+      <!-- Sync Status Banner -->
+      <div class="sync-banner" *ngIf="stats.initialSyncStatus === 'in_progress' || stats.initialSyncStatus === 'paused'">
+        <div class="spinner-sm" [class.paused]="stats.initialSyncStatus === 'paused'"></div>
+        <span *ngIf="stats.initialSyncStatus === 'in_progress'">Historical scan in progress... Older emails are being ingested.</span>
+        <span *ngIf="stats.initialSyncStatus === 'paused'">Historical scan paused.</span>
+        
+        <button class="banner-btn" *ngIf="stats.initialSyncStatus === 'in_progress'" (click)="pauseScan()">
+          <lucide-icon name="pause" [size]="12"></lucide-icon>
+          <span>Pause</span>
+        </button>
+        <button class="banner-btn resume" *ngIf="stats.initialSyncStatus === 'paused'" (click)="resumeScan()">
+          <lucide-icon name="play" [size]="12"></lucide-icon>
+          <span>Resume</span>
+        </button>
+      </div>
+
+      <!-- Top Primary Stats -->
+      <div class="stats-row grid-4">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+            <lucide-icon name="mail" [size]="20" color="white"></lucide-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ loading ? '—' : stats.totalEmailsInGmail }}</span>
+            <span class="stat-label">Total in Gmail</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#3b82f6,#2dd4bf)">
+            <lucide-icon name="database" [size]="20" color="white"></lucide-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ loading ? '—' : stats.totalEmailsScanned }}</span>
+            <span class="stat-label">Total Scanned</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#f59e0b,#f97316)">
+            <lucide-icon name="bell" [size]="20" color="white"></lucide-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ loading ? '—' : stats.unreadCount }}</span>
+            <span class="stat-label">Unread Emails</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#8b5cf6,#d946ef)">
+            <lucide-icon name="sparkles" [size]="20" color="white"></lucide-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ loading ? '—' : stats.important }}</span>
+            <span class="stat-label">Priority Items</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Daily Brief (Moved up) -->
+      <div class="summary-action-box glass-card shadow-sm" *ngIf="!loading">
+         <div class="box-header">
+            <div class="header-info">
+               <h3 class="box-title">Daily Intelligent Brief</h3>
+               <p class="box-sub">Get a brief summary of today's key emails.</p>
+            </div>
+            <button class="btn-brief" (click)="generateBrief()" [disabled]="briefLoading">
+               <lucide-icon name="sparkles" [size]="16" *ngIf="!briefLoading"></lucide-icon>
+               <div class="spinner-tiny" *ngIf="briefLoading"></div>
+               <span>{{ briefLoading ? 'Analyzing...' : 'Summarize Today' }}</span>
+            </button>
+         </div>
+         
+         <div class="brief-content anim-fade-in" *ngIf="dailyBrief">
+            <lucide-icon name="quote" [size]="20" class="quote-icon"></lucide-icon>
+            <p class="brief-text">{{ dailyBrief }}</p>
+         </div>
+      </div>
+
+      <!-- Secondary Stats (Drafts & Starred) -->
+      <div class="stats-row grid-2-wide">
+        <div class="stat-card mini">
+          <div class="stat-icon small" style="background:var(--surface2)">
+            <lucide-icon name="pen-tool" [size]="16" color="var(--accent)"></lucide-icon>
+          </div>
+          <div class="stat-info horizontal">
+            <span class="stat-label">Total Drafts</span>
+            <span class="stat-value mini">{{ loading ? '—' : stats.draftsCount }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card mini">
+          <div class="stat-icon small" style="background:var(--surface2)">
+            <lucide-icon name="star" [size]="16" color="#f59e0b"></lucide-icon>
+          </div>
+          <div class="stat-info horizontal">
+            <span class="stat-label">Total Starred</span>
+            <span class="stat-value mini">{{ loading ? '—' : stats.starredCount }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts & Activity -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Composition</h3>
+            <span class="chart-sub">Overview of categories</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas #donutChart></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card wide override-overflow">
+          <div class="chart-header">
+            <h3>Recent Activity</h3>
+            <span class="chart-sub">Latest synced emails</span>
+          </div>
+          
+          <div class="recent-list">
+            <div 
+              class="email-row" 
+              *ngFor="let email of recentEmails; let i = index"
+              [class.menu-open]="activeMenuId === email.message_id"
+              [style.animation-delay]="i * 40 + 'ms'"
+              [style.z-index]="activeMenuId === email.message_id ? 1000 : 1"
+            >
+              <div class="email-avatar">{{ email.sender?.charAt(0)?.toUpperCase() || '?' }}</div>
+              <div class="email-body">
+                <div class="email-sender">{{ email.sender }}</div>
+                <div class="email-subj">{{ email.subject }}</div>
+                <div class="email-cat-tag" *ngIf="email.category && email.category !== 'other'">
+                   {{ email.category }}
+                </div>
+              </div>
+              
+              <div class="email-opts" (click)="$event.stopPropagation()">
+                <button class="menu-trigger" (click)="toggleMenu($event, email.message_id)">
+                  <lucide-icon name="more-vertical" [size]="16"></lucide-icon>
+                </button>
+                <div class="menu-dropdown" *ngIf="activeMenuId === email.message_id">
+                  <button class="m-item" (click)="goToDraft(email.thread_id)">
+                    <lucide-icon name="pen-box" [size]="12"></lucide-icon>
+                    <span>Draft</span>
+                  </button>
+                  <button class="m-item danger" (click)="deleteEmail(email.message_id)">
+                    <lucide-icon name="trash-2" [size]="12"></lucide-icon>
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="empty-recent" *ngIf="!loading && !recentEmails.length">
+               <p>No recent synchronization data.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-row">
+        <button class="btn-primary" (click)="refresh()" [disabled]="loading">
+          <lucide-icon name="refresh-cw" [size]="15" color="white" [class.spin]="loading"></lucide-icon>
+          {{ loading ? 'Syncing...' : 'Sync Mailbox' }}
+        </button>
+      </div>
+    </div>

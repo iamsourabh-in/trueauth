@@ -1,0 +1,57 @@
+<div class="draft-page">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">AI Draft Reply</h2>
+          <p class="page-sub">Let Gemini AI write a tone-matched reply from a Gmail thread ID.</p>
+        </div>
+      </div>
+
+      <div class="draft-layout">
+        <!-- Input card -->
+        <div class="input-card">
+          <label class="field-label" for="thread-input">Gmail Thread ID</label>
+          <input
+            id="thread-input"
+            class="field-input"
+            [(ngModel)]="threadId"
+            placeholder="e.g. 18d4b9c0f1e2a3b4"
+            autocomplete="off"
+          />
+          <p class="field-hint">Find it in Gmail URL: mail.google.com/…#inbox/<strong>thread-id</strong></p>
+          <button class="btn-primary" (click)="generate()" [disabled]="loading || !threadId.trim()">
+            <lucide-icon name="pen-box" [size]="15" color="white"></lucide-icon>
+            {{ loading ? 'Generating…' : 'Generate draft' }}
+          </button>
+        </div>
+
+        <!-- Result card -->
+        <div class="result-card" *ngIf="result || error">
+          <div class="result-header">
+            <h3 *ngIf="result">Draft created ✓</h3>
+            <h3 class="err-title" *ngIf="error">Error</h3>
+          </div>
+          <div class="success-body" *ngIf="result">
+            <p class="success-msg">Your AI draft has been saved directly to your Gmail Drafts folder.</p>
+            <div class="draft-id-pill">
+              <lucide-icon name="check" [size]="12"></lucide-icon>
+              Draft ID: <code>{{ result }}</code>
+            </div>
+          </div>
+          <p class="error-msg" *ngIf="error">{{ error }}</p>
+        </div>
+      </div>
+
+      <!-- How it works -->
+      <div class="how-card">
+        <h3 class="how-title">How it works</h3>
+        <div class="steps">
+          <div class="step" *ngFor="let s of steps; let i = index">
+            <div class="step-num">{{ i + 1 }}</div>
+            <div>
+              <strong>{{ s.title }}</strong>
+              <p>{{ s.desc }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>

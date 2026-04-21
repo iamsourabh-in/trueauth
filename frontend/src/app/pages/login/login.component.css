@@ -1,0 +1,128 @@
+:host { display: block; min-height: 100vh; position: relative; }
+
+    .login-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.9rem 2rem;
+      background: var(--nav-bg); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-brand { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; }
+    .brand-logo { height: 24px; width: auto; object-fit: contain; }
+    .nav-wordmark {
+      font-size: 1.2rem; font-weight: 800; letter-spacing: -0.04em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .nav-ghost {
+      background: none; border: none; cursor: pointer; color: var(--text-secondary);
+      font-size: 0.88rem; padding: 0.4rem 0.7rem; border-radius: 0.5rem; transition: all .2s;
+    }
+    .nav-ghost:hover { color: var(--text-primary); background: var(--surface2); }
+    .theme-toggle {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem;
+      cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center; transition: all .2s;
+    }
+    .theme-toggle:hover { border-color: var(--accent); }
+
+    .login-page {
+      position: relative; z-index: 1;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 6rem 1.5rem 4rem;
+    }
+    .login-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem; align-items: center;
+      max-width: 960px; width: 100%;
+    }
+    @media (max-width: 768px) {
+      .login-split { grid-template-columns: 1fr; gap: 2rem; }
+      .login-left { text-align: center; }
+      .pill-row { justify-content: center; }
+      .stat-pills { justify-content: center; }
+    }
+
+    .login-left { }
+    .pill-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+
+    .value-heading {
+      font-size: clamp(2rem, 4vw, 3rem); font-weight: 900;
+      line-height: 1.15; letter-spacing: -0.04em;
+      color: var(--text-primary); margin-bottom: 1.25rem;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, var(--accent), var(--accent2), #ec4899);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .value-sub {
+      font-size: 1rem; color: var(--text-secondary);
+      line-height: 1.75; max-width: 420px; margin-bottom: 2rem;
+    }
+    .stat-pills { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .stat-item { display: flex; flex-direction: column; gap: 0.1rem; }
+    .stat-n { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
+    .stat-l { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    .login-card {
+      padding: 2.5rem;
+      display: flex; flex-direction: column; align-items: center; gap: 0;
+    }
+
+    .logo-wrap { margin-bottom: 1.5rem; }
+    .logo-circle {
+      width: 64px; height: 64px; border-radius: 1.25rem;
+      background: white; border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+    .logo-circle.pulse { animation: pulse-ring 2.5s ease-in-out infinite; }
+    .card-logo { width: 40px; height: auto; }
+
+    .card-title {
+      font-size: 1.5rem; font-weight: 800;
+      letter-spacing: -0.03em; color: var(--text-primary);
+      margin-bottom: 0.5rem; text-align: center;
+    }
+    .card-sub {
+      font-size: 0.9rem; color: var(--text-secondary);
+      text-align: center; line-height: 1.5; margin-bottom: 2rem;
+    }
+
+    .google-btn { margin-bottom: 1.25rem; }
+
+    .card-legal {
+      font-size: 0.78rem; color: var(--text-muted);
+      text-align: center; line-height: 1.5; margin-bottom: 1.5rem;
+    }
+    .inline-link {
+      background: none; border: none; cursor: pointer;
+      color: var(--accent); font-size: inherit; text-decoration: underline;
+    }
+
+    .divider {
+      width: 100%; display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .divider span { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
+
+    .hint-text {
+      font-size: 0.75rem; color: var(--text-muted); text-align: center; line-height: 1.5;
+    }
+    .hint-text code {
+      background: var(--surface2); color: var(--accent);
+      padding: 0.1em 0.35em; border-radius: 0.25rem; font-size: 0.85em;
+    }
+
+    .login-footer {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+      padding: 1.5rem; color: var(--text-muted); font-size: 0.8rem;
+    }
+    .footer-link {
+      background: none; border: none; cursor: pointer; color: var(--text-muted);
+      font-size: 0.8rem; text-decoration: underline;
+    }
+    .footer-link:hover { color: var(--accent); }

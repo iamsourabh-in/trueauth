@@ -1,0 +1,132 @@
+<div class="removal-page">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Personal Data Removal</h2>
+          <p class="page-sub">Scrub your digital footprint from data brokers and public databases.</p>
+        </div>
+        <button class="btn-primary" (click)="triggerScan()" [disabled]="syncing">
+          <lucide-icon name="shield-check" [size]="15" color="white" [class.spin]="syncing"></lucide-icon>
+          {{ syncing ? 'Processing...' : 'Start Scan & Remove' }}
+        </button>
+      </div>
+
+      <div class="grid-container">
+        <!-- Main Column -->
+        <div class="main-column">
+          <!-- Overview Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon"><lucide-icon name="GlobeLock" [size]="20"></lucide-icon></div>
+              <div>
+                <h3>Automated Data Broker Removal</h3>
+                <p>We automatically issue takedown requests to major data brokers.</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="brokers-list">
+                <span class="broker-chip" *ngFor="let broker of brokers" [ngClass]="broker.status">
+                  {{ broker.name }}
+                  <lucide-icon *ngIf="broker.status === 'completed'" name="check-circle" [size]="14" class="success-icon"></lucide-icon>
+                  <lucide-icon *ngIf="broker.status === 'sent'" name="check" [size]="14" class="pending-icon"></lucide-icon>
+                  <span *ngIf="broker.status === 'pending'" class="mini-spinner"></span>
+                </span>
+                <span class="broker-chip pending-chip" *ngIf="brokers.length === 0">Loading brokers...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Identity Details Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon"><lucide-icon name="Users" [size]="20"></lucide-icon></div>
+              <div>
+                <h3>Your Details for Removal</h3>
+                <p>Add aliases, numbers, and addresses to cover all bases.</p>
+              </div>
+            </div>
+            <div class="card-body details-section">
+              <div class="detail-group">
+                <label>Emails</label>
+                <div class="detail-inputs">
+                  <input #emailInp type="email" placeholder="example&#64;trueauth.app" class="form-input">
+                  <button class="btn-outline" (click)="addIdentity('email', emailInp.value); emailInp.value=''">Add</button>
+                </div>
+                <div class="tags-container">
+                  <ng-container *ngFor="let iden of identities">
+                    <span class="tag" *ngIf="iden.type === 'email'">{{ iden.value }}</span>
+                  </ng-container>
+                </div>
+              </div>
+
+              <div class="detail-group">
+                <label>Phone Numbers</label>
+                <div class="detail-inputs">
+                  <input #phoneInp type="tel" placeholder="(555) 555-5555" class="form-input">
+                  <button class="btn-outline" (click)="addIdentity('phone', phoneInp.value); phoneInp.value=''">Add</button>
+                </div>
+                <div class="tags-container">
+                  <ng-container *ngFor="let iden of identities">
+                    <span class="tag info" *ngIf="iden.type === 'phone'">{{ iden.value }}</span>
+                  </ng-container>
+                </div>
+              </div>
+
+              <div class="detail-group">
+                <label>Addresses</label>
+                <div class="detail-inputs">
+                  <input #addrInp type="text" placeholder="123 Privacy Ln..." class="form-input">
+                  <button class="btn-outline" (click)="addIdentity('address', addrInp.value); addrInp.value=''">Add</button>
+                </div>
+                <div class="tags-container">
+                  <ng-container *ngFor="let iden of identities">
+                     <span class="tag addr" *ngIf="iden.type === 'address'">{{ iden.value }}</span>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Side Column -->
+        <div class="side-column">
+          <!-- Settings Card -->
+          <div class="card">
+            <div class="card-header-compact">
+              <h3>Removal Settings</h3>
+            </div>
+            <div class="card-body settings-list">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h4>Recurring Removals</h4>
+                  <p>Check for newly posted data every month.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider round"></span>
+                </label>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h4>Unlimited Custom Requests</h4>
+                  <p>Found your data somewhere obscure? Paste the link.</p>
+                </div>
+                <button class="btn-text">Submit Request</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Support Card -->
+          <div class="support-card shadow-sm">
+            <div class="support-icon">
+              <lucide-icon name="phone-call" [size]="24" color="white"></lucide-icon>
+            </div>
+            <div class="support-content">
+              <h4>Live Phone Support</h4>
+              <p>Need help navigating identity theft or custom unlistings?</p>
+              <a href="tel:18005550199" class="support-tel">1-800-555-0199</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>

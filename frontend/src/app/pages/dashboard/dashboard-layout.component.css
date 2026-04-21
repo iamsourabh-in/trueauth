@@ -1,0 +1,91 @@
+:host { --mobile-h: 64px; --side-w: 240px; --side-w-collapsed: 72px; }
+    
+    .app-host { display: flex; flex-direction: column; height: 100vh; background: var(--bg); color: var(--text-primary); }
+    .main-wrapper { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+    /* MOBILE FIRST HEADER (Visible by default on all small screens) */
+    .mobile-top-bar {
+      display: flex; height: var(--mobile-h); background: var(--surface);
+      border-bottom: 2px solid var(--border); padding: 0 1rem;
+      align-items: center; justify-content: space-between; z-index: 1000;
+    }
+    .mini-logo { height: 28px; width: auto; }
+    .brand-name { font-weight: 900; font-size: 1.2rem; letter-spacing: -0.04em; margin-left: 0.5rem; }
+    .menu-trigger {
+      background: var(--accent-subtle); border: none; color: var(--accent);
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+
+    /* SIDEBAR (Mobile Drawer by default) */
+    .side-panel {
+      position: fixed; top: 0; bottom: 0; left: 0; width: 280px;
+      background: var(--surface); border-right: 1px solid var(--border);
+      z-index: 2000; transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; flex-direction: column;
+    }
+    .side-panel.is-mobile-open { transform: translateX(0); }
+
+    .user-pill-container {
+      display: flex; align-items: center; gap: 0.75rem; margin: 1rem;
+      padding: 0.75rem; background: var(--surface2); border-radius: 12px;
+    }
+    .avatar-sm { 
+      width: 32px; height: 32px; border-radius: 50%; background: var(--accent);
+      color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;
+    }
+    .user-email-val { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .nav-list { flex: 1; padding: 0.5rem; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+    .nav-btn {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+      border: none; background: none; color: var(--text-secondary);
+      border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 500;
+      width: 100%; text-align: left; transition: all 0.2s;
+    }
+    .nav-btn:hover { background: var(--surface2); color: var(--text-primary); }
+    .nav-btn.active { background: var(--accent-subtle); color: var(--accent); font-weight: 700; }
+    .nav-btn.danger { color: var(--danger); }
+
+    .side-footer { padding: 0.5rem; border-top: 1px solid var(--border); }
+
+    .drawer-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 1500; backdrop-filter: blur(4px);
+    }
+
+    .content-shell { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .page-container { flex: 1; overflow-y: auto; padding: 1.25rem; }
+
+    .desktop-only { display: none !important; }
+
+    /* DESKTOP REFINEMENTS (min-width: 1025px) */
+    @media (min-width: 1025px) {
+      .mobile-top-bar { display: none !important; }
+      .desktop-only { display: flex !important; }
+      .side-panel {
+        position: relative; transform: none; width: var(--side-w); min-width: var(--side-w);
+        z-index: 10;
+      }
+      .side-panel.is-collapsed { width: var(--side-w-collapsed); min-width: var(--side-w-collapsed); }
+      .side-panel.is-collapsed .nav-text, 
+      .side-panel.is-collapsed .user-meta { display: none; }
+
+      .side-header {
+        height: 64px; border-bottom: 1px solid var(--border); padding: 0 1rem;
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      .collapse-toggle {
+        background: none; border: 1px solid var(--border); border-radius: 6px;
+        padding: 4px; color: var(--text-secondary); cursor: pointer;
+      }
+
+      .desktop-top-bar {
+        height: 64px; background: var(--surface); border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between; padding: 0 2rem;
+      }
+      .page-header-title { font-size: 1.1rem; font-weight: 800; }
+      .time-stamp { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+      .page-container { padding: 2rem; }
+    }

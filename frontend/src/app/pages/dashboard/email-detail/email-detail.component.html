@@ -1,0 +1,73 @@
+<div class="detail-container anim-fade-in" *ngIf="email; else loading">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button class="back-btn" (click)="router.navigate(['/dashboard/inbox'])">
+          <lucide-icon name="arrow-left" [size]="18"></lucide-icon>
+          <span>Back to Inbox</span>
+        </button>
+        <div class="actions">
+          <button class="icon-btn" title="Archive">
+            <lucide-icon name="archive" [size]="18"></lucide-icon>
+          </button>
+          <button class="icon-btn" title="Delete">
+            <lucide-icon name="trash-2" [size]="18"></lucide-icon>
+          </button>
+          <button class="icon-btn" title="Mark Unread">
+            <lucide-icon name="mail" [size]="18"></lucide-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="email-card glass-card">
+        <div class="header">
+          <h1 class="subject">{{ email.subject || '(No Subject)' }}</h1>
+          <div class="meta-row">
+             <div class="sender-info">
+               <div class="avatar">{{ email.sender?.charAt(0)?.toUpperCase() || '?' }}</div>
+               <div class="details">
+                 <span class="sender-name">{{ email.sender }}</span>
+                 <span class="to-me">to me</span>
+               </div>
+             </div>
+             <span class="date">{{ email.received_at | date:'MMM d, y, h:mm a' }}</span>
+          </div>
+        </div>
+
+        <!-- AI Insights -->
+        <div class="ai-insights" *ngIf="email.ai_metadata || email.category">
+            <div class="ai-summary" *ngIf="email.ai_metadata?.summary">
+               <lucide-icon name="sparkles" [size]="16"></lucide-icon>
+               <p>{{ email.ai_metadata.summary }}</p>
+            </div>
+            <div class="metadata-row">
+               <span class="badge category" *ngIf="email.category">{{ email.category }}</span>
+               <span class="badge tag" *ngFor="let tag of email.ai_metadata?.tags">{{ tag }}</span>
+               <span class="badge sentiment" *ngIf="email.ai_metadata?.sentiment">{{ email.ai_metadata.sentiment }} sentiment</span>
+            </div>
+        </div>
+
+        <div class="body-container">
+          <div class="body-text" [innerHTML]="email.body"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="detail-footer">
+           <button class="action-btn primary">
+              <lucide-icon name="reply" [size]="18"></lucide-icon>
+              <span>Reply</span>
+           </button>
+           <button class="action-btn">
+              <lucide-icon name="forward" [size]="18"></lucide-icon>
+              <span>Forward</span>
+           </button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #loading>
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading email details...</p>
+      </div>
+    </ng-template>

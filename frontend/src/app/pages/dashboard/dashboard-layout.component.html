@@ -1,0 +1,81 @@
+<div class="app-host">
+      <!-- 1. MOBILE HEADER (Standard Priority) -->
+      <header class="mobile-top-bar">
+        <div class="brand-box" (click)="router.navigate(['/dashboard/summary'])">
+          <img src="assets/logo.png" alt="Logo" class="mini-logo">
+          <span class="brand-name">TrueAuth</span>
+        </div>
+        <button class="menu-trigger" (click)="toggleMobileMenu()" aria-label="Menu">
+          <lucide-icon [name]="mobileMenuOpen ? 'x' : 'menu'" [size]="24"></lucide-icon>
+        </button>
+      </header>
+
+      <div class="main-wrapper">
+        <!-- 2. SIDEBAR (Drawer on Mobile, Sidebar on Desktop) -->
+        <aside class="side-panel" 
+               [class.is-collapsed]="collapsed" 
+               [class.is-mobile-open]="mobileMenuOpen">
+          
+          <div class="side-header desktop-only">
+            <div class="brand-box" (click)="router.navigate(['/dashboard/summary'])">
+              <img src="assets/logo.png" alt="Logo" class="mini-logo">
+              <span *ngIf="!collapsed" class="brand-name">TrueAuth</span>
+            </div>
+            <button class="collapse-toggle" (click)="collapsed = !collapsed">
+              <lucide-icon [name]="collapsed ? 'chevron-right' : 'chevron-left'" [size]="16"></lucide-icon>
+            </button>
+          </div>
+
+          <div class="user-pill-container" *ngIf="(!collapsed || mobileMenuOpen) && email">
+            <div class="avatar-sm">{{ initial }}</div>
+            <div class="user-meta" *ngIf="!collapsed || mobileMenuOpen">
+              <div class="user-email-val">{{ email }}</div>
+            </div>
+          </div>
+
+          <nav class="nav-list">
+            <button
+              *ngFor="let item of navItems"
+              class="nav-btn"
+              [class.active]="router.url.startsWith(item.route)"
+              (click)="router.navigate([item.route]); toggleMobileMenu(false)"
+            >
+              <lucide-icon [name]="item.icon" [size]="20" class="nav-icon"></lucide-icon>
+              <span class="nav-text" *ngIf="!collapsed || mobileMenuOpen">{{ item.label }}</span>
+            </button>
+          </nav>
+
+          <footer class="side-footer">
+            <button class="nav-btn" (click)="theme.toggle()">
+              <lucide-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="20"></lucide-icon>
+              <span class="nav-text" *ngIf="!collapsed || mobileMenuOpen">
+                {{ theme.theme() === 'dark' ? 'Light' : 'Dark' }} Mode
+              </span>
+            </button>
+            <button class="nav-btn danger desktop-only" (click)="purgeData()" *ngIf="!collapsed">
+              <lucide-icon name="user-x" [size]="20"></lucide-icon>
+              <span class="nav-text">Purge Data</span>
+            </button>
+            <button class="nav-btn" (click)="signOut()">
+              <lucide-icon name="log-out" [size]="20"></lucide-icon>
+              <span class="nav-text" *ngIf="!collapsed || mobileMenuOpen">Sign Out</span>
+            </button>
+          </footer>
+        </aside>
+
+        <!-- 3. MOBILE OVERLAY -->
+        <div class="drawer-overlay" *ngIf="mobileMenuOpen" (click)="toggleMobileMenu(false)"></div>
+
+        <!-- 4. CONTENT AREA -->
+        <main class="content-shell">
+          <header class="desktop-top-bar desktop-only">
+            <h1 class="page-header-title">{{ currentTitle }}</h1>
+            <span class="time-stamp">{{ now | date:'EEE, MMM d · h:mm a' }}</span>
+          </header>
+          
+          <div class="page-container">
+            <router-outlet></router-outlet>
+          </div>
+        </main>
+      </div>
+    </div>

@@ -23,18 +23,18 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'summary', pathMatch: 'full' },
-      { path: 'summary',       component: InboxComponent },
-      { path: 'inbox',         component: EmailListComponent },
-      { path: 'inbox/:id',     component: EmailDetailComponent },
+      { path: 'summary', component: InboxComponent },
+      { path: 'inbox', component: EmailListComponent },
+      { path: 'inbox/:id', component: EmailDetailComponent },
       { path: 'subscriptions', component: SubscriptionsPageComponent },
-      { path: 'cleanup',       component: CleanupPageComponent },
-      { path: 'draft',         component: DraftPageComponent },
-      { path: 'calendar',      component: CalendarPageComponent },
-      { path: 'activity-log',  component: AuditLogsComponent },
-      { path: 'data-removal',  component: DataRemovalComponent },
+      { path: 'cleanup', component: CleanupPageComponent },
+      { path: 'draft', component: DraftPageComponent },
+      { path: 'calendar', component: CalendarPageComponent },
+      { path: 'data-removal', component: DataRemovalComponent },
+      { path: 'activity-log', component: AuditLogsComponent }
     ]
   },
-  { path: 'about',   component: AboutComponent },
+  { path: 'about', component: AboutComponent },
   { path: 'privacy', component: PrivacyComponent },
   { path: '**', redirectTo: '/login' }
 ];

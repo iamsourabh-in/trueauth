@@ -1,0 +1,47 @@
+<div class="page-bg min-h-screen">
+      <nav class="site-nav">
+        <button class="nav-logo" (click)="router.navigate(['/'])">TrueAuth</button>
+        <div class="nav-links">
+          <button class="nav-link" (click)="router.navigate(['/about'])">About</button>
+          <button class="nav-link" (click)="router.navigate(['/privacy'])">Privacy</button>
+          <button class="nav-link cta" (click)="router.navigate(['/login'])">Sign in</button>
+          <button class="theme-btn" (click)="theme.toggle()" title="Toggle theme">
+            <lucide-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18"></lucide-icon>
+          </button>
+        </div>
+      </nav>
+
+      <main class="about-main">
+        <section class="about-hero">
+          <div class="hero-badge">Our Mission</div>
+          <h1 class="about-title">Email should <em>help</em> you,<br>not overwhelm you.</h1>
+          <p class="about-subtitle">TrueAuth is an AI-native email manager built to help you reclaim your inbox. We combine cutting-edge LLMs with smart automation to keep your workflow clean, focused, and secure.</p>
+        </section>
+
+        <section class="features-grid">
+          <div class="feature-card" *ngFor="let f of features">
+            <div class="feature-icon">{{ f.icon }}</div>
+            <h3 class="feature-title">{{ f.title }}</h3>
+            <p class="feature-desc">{{ f.desc }}</p>
+          </div>
+        </section>
+
+        <section class="mission-section">
+          <div class="mission-card">
+            <h2>Built on trust &amp; transparency</h2>
+            <p>We believe your data belongs to <strong>you</strong>. TrueAuth only reads the emails you explicitly authorize. Your Google tokens are encrypted, never sold, and you can revoke access at any time from your Google account settings.</p>
+            <div class="stat-row">
+              <div class="stat"><span class="stat-num">0</span><span class="stat-label">Emails stored by us</span></div>
+              <div class="stat"><span class="stat-num">100%</span><span class="stat-label">OAuth-based access</span></div>
+              <div class="stat"><span class="stat-num">Open</span><span class="stat-label">Source architecture</span></div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <span>© 2025 TrueAuth</span>
+        <button class="footer-link" (click)="router.navigate(['/privacy'])">Privacy Policy</button>
+        <button class="footer-link" (click)="router.navigate(['/about'])">About</button>
+      </footer>
+    </div>

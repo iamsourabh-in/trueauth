@@ -1,0 +1,34 @@
+<div class="page-bg min-h-screen">
+      <nav class="site-nav">
+        <button class="nav-logo" (click)="router.navigate(['/'])">TrueAuth</button>
+        <div class="nav-links">
+          <button class="nav-link" (click)="router.navigate(['/about'])">About</button>
+          <button class="nav-link" (click)="router.navigate(['/privacy'])">Privacy</button>
+          <button class="nav-link cta" (click)="router.navigate(['/login'])">Sign in</button>
+          <button class="theme-btn" (click)="theme.toggle()" title="Toggle theme">
+             <lucide-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18"></lucide-icon>
+          </button>
+        </div>
+      </nav>
+
+      <main class="privacy-main">
+        <div class="privacy-header">
+          <div class="hero-badge">Legal</div>
+          <h1 class="privacy-title">Privacy Policy</h1>
+          <p class="privacy-meta">Last updated: April 2025</p>
+        </div>
+
+        <div class="privacy-body">
+          <div class="policy-section" *ngFor="let s of sections">
+            <h2>{{ s.title }}</h2>
+            <p *ngFor="let p of s.paragraphs">{{ p }}</p>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <span>© 2025 TrueAuth</span>
+        <button class="footer-link" (click)="router.navigate(['/privacy'])">Privacy Policy</button>
+        <button class="footer-link" (click)="router.navigate(['/about'])">About</button>
+      </footer>
+    </div>

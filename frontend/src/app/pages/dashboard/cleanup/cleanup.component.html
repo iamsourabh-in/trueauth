@@ -1,0 +1,78 @@
+<div class="cleanup-page">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Cleanup Rules</h2>
+          <p class="page-sub">Run background jobs to auto-archive or delete unwanted mail.</p>
+        </div>
+      </div>
+
+      <div class="rules-grid">
+        <div class="rule-card" *ngFor="let r of rules">
+          <div class="rule-icon" [style.background]="r.color">
+             <lucide-icon [name]="r.icon" [size]="20" color="white"></lucide-icon>
+          </div>
+          <div class="rule-body">
+            <h3 class="rule-name">{{ r.label }}</h3>
+            <p class="rule-desc">{{ r.desc }}</p>
+          </div>
+          <button
+            class="run-btn"
+            [class.running]="running === r.action"
+            [class.done]="done.has(r.action)"
+            (click)="run(r)"
+            [disabled]="running !== null"
+          >
+            <span *ngIf="running === r.action" class="mini-spinner"></span>
+            <span *ngIf="done.has(r.action)">✓ Done</span>
+            <span *ngIf="running !== r.action && !done.has(r.action)">Run</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bulk Delete -->
+      <div class="bulk-delete-section">
+        <div class="rule-card bulk-card">
+          <div class="rule-icon" style="background: linear-gradient(135deg, #ec4899, #f43f5e)">
+             <lucide-icon name="trash-2" [size]="20" color="white"></lucide-icon>
+          </div>
+          <div class="rule-body">
+            <h3 class="rule-name">Custom Bulk Delete</h3>
+            <p class="rule-desc">Permanently remove all emails matching a specific Gmail search query.</p>
+            <div class="bulk-input-row">
+               <input type="text" list="bulkSenders" placeholder="e.g. from:spam@example.com or older_than:30d" class="form-input" [value]="bulkQuery" (input)="onBulkInput($event)">
+               <datalist id="bulkSenders">
+                  <option *ngFor="let s of senders" [value]="'from:' + s">{{ s }}</option>
+               </datalist>
+               <button 
+                 class="run-btn danger" 
+                 [class.running]="running === 'bulk-delete'"
+                 [disabled]="!bulkQuery || running !== null"
+                 (click)="runBulk()"
+               >
+                 <span *ngIf="running === 'bulk-delete'" class="mini-spinner"></span>
+                 <span *ngIf="running !== 'bulk-delete'">Run Delete</span>
+               </button>
+            </div>
+            <div class="template-chips">
+               <span class="t-chip" (click)="setBulkQuery('older_than:30d')">older_than:30d</span>
+               <span class="t-chip" (click)="setBulkQuery('older_than:1y')">older_than:1y</span>
+               <span class="t-chip" (click)="setBulkQuery('is:unread')">is:unread</span>
+               <span class="t-chip" (click)="setBulkQuery('has:attachment')">has:attachment</span>
+               <span class="t-chip" (click)="setBulkQuery('category:promotions')">category:promotions</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="log-section" *ngIf="log.length > 0">
+        <h3 class="log-title">Activity log</h3>
+        <div class="log-list">
+          <div class="log-row" *ngFor="let l of log">
+            <span class="log-dot" [class.success]="l.ok" [class.fail]="!l.ok"></span>
+            <span class="log-time">{{ l.time | date:'HH:mm:ss' }}</span>
+            <span class="log-msg">{{ l.msg }}</span>
+          </div>
+        </div>
+      </div>
+    </div>

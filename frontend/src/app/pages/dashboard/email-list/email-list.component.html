@@ -1,0 +1,109 @@
+<div class="email-page">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Inbox</h2>
+          <p class="page-sub">Ingested emails for AI analysis and organization.</p>
+        </div>
+        <button class="btn-primary" (click)="sync()" [disabled]="syncing">
+          <lucide-icon name="refresh-cw" [size]="15" [class.spin]="syncing"></lucide-icon>
+          {{ syncing ? 'Syncing...' : 'Sync Now' }}
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar">
+        <div class="search-box">
+          <lucide-icon name="search" [size]="16" class="search-icon"></lucide-icon>
+          <input type="text" placeholder="Search emails..." [value]="searchQuery" (input)="onSearch($event)">
+        </div>
+        
+        <div class="dropdown-container">
+          <button class="filter-btn" (click)="toggleFilterMenu($event)">
+            <lucide-icon name="filter" [size]="16"></lucide-icon>
+            <span>Filters</span>
+            <span class="badge-count" *ngIf="selectedCategories.size > 0">{{ selectedCategories.size }}</span>
+          </button>
+          
+          <div class="filter-dropdown" *ngIf="filterMenuOpen" (click)="$event.stopPropagation()">
+            <div class="filter-header">
+               <span>Categories</span>
+               <button class="clear-btn" *ngIf="selectedCategories.size > 0" (click)="clearFilters()">Clear</button>
+            </div>
+            <div class="filter-options">
+               <label class="checkbox-label" *ngFor="let cat of availableCategories">
+                 <input type="checkbox" [checked]="selectedCategories.has(cat)" (change)="toggleCategory(cat)">
+                 <span class="check-text">{{ cat }}</span>
+               </label>
+               <div class="no-cats" *ngIf="!availableCategories.length">No categories found</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="loading && !emails.length">
+        <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5,6]"></div>
+      </div>
+
+      <!-- Email List -->
+      <div class="email-list" *ngIf="!loading || emails.length > 0">
+        <div 
+          class="email-item" 
+          *ngFor="let email of emails; let i = index" 
+          [style.animation-delay]="(i % 50) * 20 + 'ms'"
+          [class.menu-open]="activeMenuId === email.message_id"
+          [style.z-index]="activeMenuId === email.message_id ? 1000 : 1"
+        >
+          <div class="email-avatar">{{ email.sender.charAt(0).toUpperCase() }}</div>
+          <div class="email-main" (click)="viewEmail(email.message_id)">
+            <div class="email-top">
+              <span class="email-sender" [title]="email.sender">{{ email.sender }}</span>
+              <span class="email-date">{{ email.received_at | date:'MMM d' }}</span>
+            </div>
+            <div class="email-subject">{{ email.subject }}</div>
+            <div class="email-snippet">{{ email.snippet }}</div>
+            
+            <div class="email-metadata" *ngIf="email.category || email.ai_metadata?.tags">
+              <span class="badge category" *ngIf="email.category">{{ email.category }}</span>
+              <span class="badge tag" *ngFor="let tag of email.ai_metadata?.tags">{{ tag }}</span>
+            </div>
+          </div>
+          
+          <div class="email-actions">
+             <button class="more-btn" (click)="toggleMenu($event, email.message_id)" title="Options">
+                <lucide-icon name="more-vertical" [size]="18"></lucide-icon>
+             </button>
+
+              <!-- Dropdown Menu -->
+              <div class="dropdown-menu" *ngIf="activeMenuId === email.message_id" (click)="$event.stopPropagation()">
+                 <button class="menu-item" (click)="analyzeEmail(email.message_id)">
+                   <lucide-icon name="sparkles" [size]="14"></lucide-icon>
+                   <span>Analyze with AI</span>
+                 </button>
+                 <button class="menu-item" (click)="goToDraft(email.thread_id)">
+                   <lucide-icon name="pen-box" [size]="14"></lucide-icon>
+                   <span>AI Draft Reply</span>
+                 </button>
+                 <button class="menu-item danger" (click)="deleteEmail(email.message_id)">
+                   <lucide-icon name="trash-2" [size]="14"></lucide-icon>
+                   <span>Delete Email</span>
+                 </button>
+              </div>
+           </div>
+         </div>
+ 
+
+         <!-- Load More -->
+        <div class="pagination-area" *ngIf="hasMore && !loading">
+            <button class="btn-secondary" (click)="loadMore()">
+                <span>Load More</span>
+            </button>
+        </div>
+
+        <div class="empty-state" *ngIf="!loading && emails.length === 0">
+          <lucide-icon name="mail" [size]="40" style="opacity: 0.2"></lucide-icon>
+          <h3>No emails synced</h3>
+          <p>Click "Sync Now" to ingest your recent emails from Gmail.</p>
+        </div>
+      </div>
+    </div>

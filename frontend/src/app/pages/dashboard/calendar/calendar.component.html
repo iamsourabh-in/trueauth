@@ -1,0 +1,88 @@
+<div class="calendar-page anim-fade-in">
+      <div class="page-header">
+        <div class="header-main">
+          <h2 class="page-title">Monthly Schedule</h2>
+          <p class="page-sub">Intelligent view of your upcoming events and commitments.</p>
+        </div>
+        <div class="header-actions">
+           <label class="toggle-checkbox">
+             <input type="checkbox" [(ngModel)]="showHolidays" (change)="generateGrid()">
+             <span>Show public holidays</span>
+           </label>
+           
+           <div class="month-controls">
+             <button class="icon-btn hollow" (click)="prevMonth()">
+               <lucide-icon name="chevron-left" [size]="18"></lucide-icon>
+             </button>
+             <div class="month-label">
+               <lucide-icon name="calendar" [size]="20"></lucide-icon>
+               <span>{{ currentMonthDate | date:'MMMM yyyy' }}</span>
+             </div>
+             <button class="icon-btn hollow" (click)="nextMonth()">
+               <lucide-icon name="chevron-right" [size]="18"></lucide-icon>
+             </button>
+           </div>
+        </div>
+      </div>
+
+      <div class="calendar-grid">
+         <!-- Left Column: Upcoming Timeline -->
+         <div class="timeline-column">
+            <div class="section-card glass-card">
+               <div class="card-header">
+                  <h3 class="card-title">Next 24 Hours</h3>
+                  <span class="badge">{{ eventsToday.length }} Events</span>
+               </div>
+               
+               <div class="timeline-list">
+                  <div class="timeline-item" *ngFor="let ev of eventsToday">
+                     <div class="time-marker">
+                        <span class="time">{{ ev.start?.dateTime | date:'HH:mm' }}</span>
+                        <div class="dot" [class.now]="isCurrentlyRunning(ev)"></div>
+                     </div>
+                     <div class="event-content">
+                        <span class="event-title">{{ ev.summary }}</span>
+                        <span class="event-loc" *ngIf="ev.location">
+                           <lucide-icon name="map-pin" [size]="12"></lucide-icon>
+                           {{ ev.location }}
+                        </span>
+                     </div>
+                  </div>
+                  <div class="empty-timeline" *ngIf="eventsToday.length === 0">
+                     <p>Clear schedule for today.</p>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <!-- Right Column: Full Month Grid -->
+         <div class="main-column">
+            <div class="month-container glass-card">
+               
+               <div class="calendar-table-header">
+                  <span class="weekday" *ngFor="let day of weekDays">{{ day }}</span>
+               </div>
+               
+               <div class="calendar-table-body">
+                  <div class="day-cell" *ngFor="let cell of calendarGrid" [class.empty]="!cell.date" [class.today]="cell.isToday" [class.weekend]="cell.isWeekend">
+                     <div class="date-num" *ngIf="cell.date">{{ cell.dayNum }}</div>
+                     
+                     <div class="cell-events" *ngIf="cell.events.length > 0">
+                        <ng-container *ngFor="let ev of cell.events">
+                           <div class="cell-event-pill" *ngIf="shouldShowEvent(ev)" [title]="ev.summary">
+                              <span class="evt-time" *ngIf="ev.start?.dateTime">{{ ev.start.dateTime | date:'HH:mm' }}</span>
+                              <span class="evt-title">{{ ev.summary }}</span>
+                           </div>
+                        </ng-container>
+                     </div>
+                  </div>
+               </div>
+
+               <div class="loading-state" *ngIf="loading">
+                  <div class="spinner"></div>
+                  <p>Fetching your schedule...</p>
+               </div>
+            </div>
+         </div>
+      </div>
+    </div>

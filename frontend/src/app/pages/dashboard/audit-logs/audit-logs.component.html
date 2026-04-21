@@ -1,0 +1,104 @@
+<div class="audit-page anim-fade-in">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Activity Audit Trail</h2>
+          <p class="page-sub">Comprehensive history of synchronization and automated cleanup actions.</p>
+        </div>
+        <button class="btn-danger-outline" (click)="clearLogs()" [disabled]="loading || (cleanupLogs.length === 0 && syncLogs.length === 0)">
+           <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+           <span>Clear History</span>
+        </button>
+      </div>
+
+      <!-- Part 1: Sync Summary Cards -->
+      <div class="section-title">
+        <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
+        <span>Recent Sync History</span>
+      </div>
+      
+      <div class="sync-grid" *ngIf="syncLogs.length > 0">
+         <div class="sync-card glass-card" *ngFor="let log of syncLogs">
+            <div class="sync-header">
+               <span class="sync-date">{{ log.created_at | date:'MMM d, h:mm a' }}</span>
+               <span class="status-dot" [class]="log.status"></span>
+            </div>
+            <div class="sync-stats">
+               <div class="stat">
+                  <span class="label">Processed</span>
+                  <span class="value">{{ log.emails_count }} emails</span>
+               </div>
+               <div class="stat">
+                  <span class="label">Status</span>
+                  <span class="value status-text" [class]="log.status">{{ log.status }}</span>
+               </div>
+            </div>
+         </div>
+      </div>
+      <div class="empty-mini shadow-sm" *ngIf="!loading && syncLogs.length === 0">
+         No synchronization records found.
+      </div>
+
+      <!-- Part 2: Cleanup Logs Table -->
+      <div class="section-title mt-8">
+        <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+        <span>Detailed Cleanup Logs</span>
+      </div>
+
+      <div class="logs-table-container glass-card">
+         <table class="audit-table">
+            <thead>
+               <tr>
+                  <th>Action Type</th>
+                  <th>Description</th>
+                  <th>Result</th>
+                  <th>Timestamp</th>
+               </tr>
+            </thead>
+            <tbody>
+               <tr *ngFor="let log of cleanupLogs; let i = index">
+                  <td>
+                     <div class="action-type">
+                        <div class="type-indicator"></div>
+                        {{ log.action_type?.replace('_', ' ') | uppercase }}
+                     </div>
+                  </td>
+                  <td>
+                     <div class="detail-cell">
+                        <span class="main-detail">Processed thread: {{ log.thread_id }}</span>
+                        <span class="sub-detail" *ngIf="log.metadata?.subject">{{ log.metadata.subject }}</span>
+                     </div>
+                  </td>
+                  <td>
+                     <span class="status-badge" [class]="log.status">{{ log.status }}</span>
+                  </td>
+                  <td class="time-cell">
+                     {{ log.action_taken_at | date:'MMM d, y, h:mm:ss a' }}
+                  </td>
+               </tr>
+            </tbody>
+         </table>
+
+         <div class="empty-state" *ngIf="!loading && cleanupLogs.length === 0">
+            <lucide-icon name="clipboard-list" [size]="44" style="opacity: 0.1"></lucide-icon>
+            <p>No cleanup actions recorded yet.</p>
+         </div>
+
+         <div class="loading-overlay" *ngIf="loading">
+            <div class="spinner"></div>
+         </div>
+
+         <!-- Pagination -->
+         <div class="pagination-footer" *ngIf="totalCleanup > 0">
+            <span class="total-info">Showing {{ cleanupLogs.length }} of {{ totalCleanup }} records</span>
+            <div class="page-controls">
+               <button class="page-btn" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)">
+                  <lucide-icon name="chevron-left" [size]="16"></lucide-icon>
+               </button>
+               <span class="curr-page">Page {{ currentPage }}</span>
+               <button class="page-btn" [disabled]="!hasMore" (click)="changePage(currentPage + 1)">
+                  <lucide-icon name="chevron-right" [size]="16"></lucide-icon>
+               </button>
+            </div>
+         </div>
+      </div>
+    </div>
