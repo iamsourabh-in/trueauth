@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
 import { ApiService } from '../../../services/api.service';
+import { SubscriptionService } from '../../../services/subscription.service';
 
 @Component({
   selector: 'app-data-removal',
@@ -16,23 +17,17 @@ export class DataRemovalComponent implements OnInit {
   identities: any[] = [];
   logs: any[] = [];
   syncing = false;
-  isPremium = false;
+  subscription = inject(SubscriptionService);
 
   async ngOnInit() {
-    try {
-      const planRes = await this.api.getPlan();
-      this.isPremium = planRes.plan === 'premium';
-    } catch {}
-
-    if (this.isPremium) {
+    if (this.subscription.isPremium()) {
       await this.loadStatus();
     }
   }
 
   async upgradeToPremium() {
     try {
-      await this.api.purchasePremium();
-      this.isPremium = true;
+      await this.subscription.purchasePremium();
       await this.loadStatus();
     } catch (e) {
       console.error('Purchase failed', e);

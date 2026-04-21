@@ -4,14 +4,19 @@
           <h2 class="page-title">Personal Data Removal</h2>
           <p class="page-sub">Scrub your digital footprint from data brokers and public databases.</p>
         </div>
-        <button class="btn-primary" (click)="triggerScan()" [disabled]="syncing || !isPremium">
+        <button *ngIf="subscription.isPremium()" class="btn-primary" (click)="triggerScan()" [disabled]="syncing">
           <lucide-icon name="shield-check" [size]="15" color="white" [class.spin]="syncing"></lucide-icon>
-          {{ syncing ? 'Processing...' : 'Start Scan & Remove' }}
+          {{ syncing ? 'Processing...' : 'Start Scan &amp; Remove' }}
         </button>
       </div>
 
+      <!-- Loading State -->
+      <div class="loading-overlay" *ngIf="!subscription.planLoaded()">
+        <div class="spinner"></div>
+      </div>
+
       <!-- Premium Gate -->
-      <div class="premium-gate" *ngIf="!isPremium">
+      <div class="premium-gate" *ngIf="subscription.planLoaded() && !subscription.isPremium()">
         <div class="gate-card">
           <lucide-icon name="crown" [size]="48" class="gate-icon"></lucide-icon>
           <h3>Premium Feature</h3>
@@ -28,7 +33,7 @@
         </div>
       </div>
 
-      <ng-container *ngIf="isPremium">
+      <ng-container *ngIf="subscription.planLoaded() && subscription.isPremium()">
       <div class="grid-container">
         <!-- Main Column -->
         <div class="main-column">

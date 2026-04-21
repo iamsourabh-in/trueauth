@@ -71,3 +71,4 @@ TrueAuth is a high-performance, intelligent email management platform designed t
 
 ## License
 MIT
+The purchase flow is simulated for now — swap POST /billing/purchase with a Razorpay/Stripe webhook when you're ready for production payments.

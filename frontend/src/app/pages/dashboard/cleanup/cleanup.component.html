@@ -6,8 +6,13 @@
         </div>
       </div>
 
+      <!-- Loading State -->
+      <div class="loading-overlay" *ngIf="!subscription.planLoaded()">
+        <div class="spinner"></div>
+      </div>
+
       <!-- Premium Gate -->
-      <div class="premium-gate" *ngIf="!isPremium">
+      <div class="premium-gate" *ngIf="subscription.planLoaded() && !subscription.isPremium()">
         <div class="gate-card">
           <lucide-icon name="crown" [size]="48" class="gate-icon"></lucide-icon>
           <h3>Premium Feature</h3>
@@ -24,7 +29,7 @@
         </div>
       </div>
 
-      <ng-container *ngIf="isPremium">
+      <ng-container *ngIf="subscription.planLoaded() && subscription.isPremium()">
       <div class="rules-grid">
         <div class="rule-card" *ngFor="let r of rules">
           <div class="rule-icon" [style.background]="r.color">

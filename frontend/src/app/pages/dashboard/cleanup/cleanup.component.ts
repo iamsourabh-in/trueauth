@@ -1,7 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
+import { SubscriptionService } from '../../../services/subscription.service';
 import { LucideAngularModule } from 'lucide-angular';
+import { CommonModule } from '@angular/common';
 
 interface Rule { id: string; label: string; desc: string; action: string; icon: string; color: string; }
 
@@ -19,15 +20,10 @@ export class CleanupPageComponent implements OnInit {
   log: { time: Date; msg: string; ok: boolean }[] = [];
   bulkQuery = '';
   senders: string[] = [];
-  isPremium = false;
+  subscription = inject(SubscriptionService);
 
   async ngOnInit() {
-    try {
-      const planRes = await this.api.getPlan();
-      this.isPremium = planRes.plan === 'premium';
-    } catch {}
-
-    if (this.isPremium) {
+    if (this.subscription.isPremium()) {
       try {
         const res = await this.api.getEmailSenders();
         this.senders = res.senders || [];
@@ -39,8 +35,7 @@ export class CleanupPageComponent implements OnInit {
 
   async upgradeToPremium() {
     try {
-      await this.api.purchasePremium();
-      this.isPremium = true;
+      await this.subscription.purchasePremium();
       await this.ngOnInit();
     } catch (e) {
       console.error('Purchase failed', e);

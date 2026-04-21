@@ -38,20 +38,21 @@
               *ngFor="let item of navItems"
               class="nav-btn"
               [class.active]="router.url.startsWith(item.route)"
-              (click)="router.navigate([item.route]); toggleMobileMenu(false)"
+              [class.locked]="subscription.planLoaded() && item.premium && !subscription.isPremium()"
+              (click)="navigateItem(item)"
             >
               <lucide-icon [name]="item.icon" [size]="20" class="nav-icon"></lucide-icon>
               <span class="nav-text" *ngIf="!collapsed || mobileMenuOpen">{{ item.label }}</span>
-              <lucide-icon *ngIf="item.premium && !isPremium && (!collapsed || mobileMenuOpen)" name="lock" [size]="14" class="premium-lock"></lucide-icon>
+              <lucide-icon *ngIf="subscription.planLoaded() && item.premium && !subscription.isPremium() && (!collapsed || mobileMenuOpen)" name="lock" [size]="14" class="premium-lock"></lucide-icon>
             </button>
           </nav>
 
           <footer class="side-footer">
-            <button *ngIf="!isPremium" class="upgrade-btn" (click)="router.navigate(['/dashboard/cleanup']); toggleMobileMenu(false)">
+            <button *ngIf="subscription.planLoaded() && !subscription.isPremium()" class="upgrade-btn" (click)="navigateItem(navItems[3])">
               <lucide-icon name="crown" [size]="18"></lucide-icon>
               <span class="nav-text" *ngIf="!collapsed || mobileMenuOpen">Upgrade to Premium</span>
             </button>
-            <div class="premium-badge" *ngIf="isPremium && (!collapsed || mobileMenuOpen)">
+            <div class="premium-badge" *ngIf="subscription.planLoaded() && subscription.isPremium() && (!collapsed || mobileMenuOpen)">
               <lucide-icon name="crown" [size]="16"></lucide-icon>
               <span>Premium</span>
             </div>

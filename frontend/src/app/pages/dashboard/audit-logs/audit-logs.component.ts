@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
+import { SubscriptionService } from '../../../services/subscription.service';
 import { LucideAngularModule } from 'lucide-angular';
 
 @Component({
@@ -20,15 +21,10 @@ export class AuditLogsComponent implements OnInit {
   currentPage = 1;
   totalCleanup = 0;
   hasMore = false;
-  isPremium = false;
+  subscription = inject(SubscriptionService);
 
   async ngOnInit() {
-    try {
-      const planRes = await this.api.getPlan();
-      this.isPremium = planRes.plan === 'premium';
-    } catch {}
-
-    if (this.isPremium) {
+    if (this.subscription.isPremium()) {
       await this.loadLogs();
     } else {
       this.loading = false;
@@ -37,8 +33,7 @@ export class AuditLogsComponent implements OnInit {
 
   async upgradeToPremium() {
     try {
-      await this.api.purchasePremium();
-      this.isPremium = true;
+      await this.subscription.purchasePremium();
       await this.loadLogs();
     } catch (e) {
       console.error('Purchase failed', e);

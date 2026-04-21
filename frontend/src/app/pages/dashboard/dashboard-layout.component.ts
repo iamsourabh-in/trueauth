@@ -5,6 +5,7 @@ import { LucideAngularModule } from 'lucide-angular';
 import { SupabaseService } from '../../services/supabase.service';
 import { ThemeService } from '../../services/theme.service';
 import { ApiService } from '../../services/api.service';
+import { SubscriptionService } from '../../services/subscription.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 interface NavItem {
@@ -33,8 +34,7 @@ export class DashboardLayoutComponent implements OnInit {
   now = new Date();
   collapsed = false;
   mobileMenuOpen = false;
-  isPremium = false;
-  planExpiry = '';
+  subscription = inject(SubscriptionService);
 
   navItems: NavItem[] = [
     { label: 'Overview', route: '/dashboard/summary', icon: 'layout' },
@@ -68,17 +68,17 @@ export class DashboardLayoutComponent implements OnInit {
     } catch (e) {
       console.error('Failed to sync Google tokens from session', e);
     }
-    await this.loadPlan();
+    await this.subscription.refreshPlan();
   }
 
-  async loadPlan() {
-    try {
-      const res = await this.api.getPlan();
-      this.isPremium = res.plan === 'premium';
-      this.planExpiry = res.expires_at || '';
-    } catch (e) {
-      console.error('Failed to load plan', e);
+
+
+  navigateItem(item: NavItem) {
+    if (item.premium && !this.subscription.isPremium()) {
+      // Still navigate — let the page itself show the upgrade gate
     }
+    this.router.navigate([item.route]);
+    this.toggleMobileMenu(false);
   }
 
   toggleMobileMenu(state?: boolean) {
