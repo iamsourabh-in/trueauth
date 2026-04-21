@@ -35,68 +35,96 @@ export const processCleanup = async (job: Job) => {
       const res = await gmail.users.messages.list({ userId: 'me', q: 'category:promotions', maxResults: 100 });
       const msgs = res.data.messages || [];
 
-      for (const msg of msgs) {
-        if (!msg.id) continue;
+      if (msgs.length > 0) {
+        const messageIds = msgs.map(m => m.id).filter(id => id != null) as string[];
 
-        // Remove inbox label, add ToReview  @clean
-        await gmail.users.messages.modify({
-          userId: 'me',
-          id: msg.id,
-          requestBody: {
-            removeLabelIds: ['INBOX'],
-            addLabelIds: toReviewLabelId ? [toReviewLabelId] : []
-          }
-        });
+        for (const msg of msgs) {
+          if (!msg.id) continue;
 
-        // Log to DB
-        await supabase.from('cleanup_log').insert({
-          user_id: userId,
-          action_type: action,
-          thread_id: msg.threadId,
-          status: 'completed'
-        });
+          // Remove inbox label, add ToReview  @clean
+          await gmail.users.messages.modify({
+            userId: 'me',
+            id: msg.id,
+            requestBody: {
+              removeLabelIds: ['INBOX'],
+              addLabelIds: toReviewLabelId ? [toReviewLabelId] : []
+            }
+          });
+
+          // Log to DB
+          await supabase.from('cleanup_log').insert({
+            user_id: userId,
+            action_type: action,
+            thread_id: msg.threadId,
+            status: 'completed'
+          });
+        }
+
+        // Also delete from local Supabase DB if they were synced
+        await supabase.from('emails').delete().eq('user_id', userId).in('message_id', messageIds);
       }
     } else if (action === 'delete-otps') {
       const res = await gmail.users.messages.list({ userId: 'me', q: 'older_than:24h OTP OR verification OR code', maxResults: 100 });
       const msgs = res.data.messages || [];
 
-      for (const msg of msgs) {
-        if (!msg.id) continue;
-        await gmail.users.messages.trash({ userId: 'me', id: msg.id });
-        await supabase.from('cleanup_log').insert({
-          user_id: userId,
-          action_type: action,
-          thread_id: msg.threadId,
-          status: 'completed'
-        });
+      if (msgs.length > 0) {
+        const messageIds = msgs.map(m => m.id).filter(id => id != null) as string[];
+
+        for (const msg of msgs) {
+          if (!msg.id) continue;
+          await gmail.users.messages.trash({ userId: 'me', id: msg.id });
+          await supabase.from('cleanup_log').insert({
+            user_id: userId,
+            action_type: action,
+            thread_id: msg.threadId,
+            status: 'completed'
+          });
+        }
+
+        // Delete from Supabase
+        await supabase.from('emails').delete().eq('user_id', userId).in('message_id', messageIds);
       }
     } else if (action === 'delete-spam') {
       const res = await gmail.users.messages.list({ userId: 'me', q: 'in:spam', maxResults: 100 });
       const msgs = res.data.messages || [];
 
-      for (const msg of msgs) {
-        if (!msg.id) continue;
-        await gmail.users.messages.trash({ userId: 'me', id: msg.id });
-        await supabase.from('cleanup_log').insert({
-          user_id: userId,
-          action_type: action,
-          thread_id: msg.threadId,
-          status: 'completed'
-        });
+      if (msgs.length > 0) {
+        const messageIds = msgs.map(m => m.id).filter(id => id != null) as string[];
+
+        for (const msg of msgs) {
+          if (!msg.id) continue;
+          await gmail.users.messages.trash({ userId: 'me', id: msg.id });
+          await supabase.from('cleanup_log').insert({
+            user_id: userId,
+            action_type: action,
+            thread_id: msg.threadId,
+            status: 'completed'
+          });
+        }
+
+        // Delete from Supabase
+        await supabase.from('emails').delete().eq('user_id', userId).in('message_id', messageIds);
       }
     } else if (action === 'clear-junk') {
       const res = await gmail.users.messages.list({ userId: 'me', q: 'label:junk OR "unsubscribe" older_than:30d', maxResults: 100 });
       const msgs = res.data.messages || [];
 
-      for (const msg of msgs) {
-        if (!msg.id) continue;
-        await gmail.users.messages.trash({ userId: 'me', id: msg.id });
-        await supabase.from('cleanup_log').insert({
-          user_id: userId,
-          action_type: action,
-          thread_id: msg.threadId,
-          status: 'completed'
-        });
+      if (msgs.length > 0) {
+        const messageIds = msgs.map(m => m.id).filter(id => id != null) as string[];
+
+        for (const msg of msgs) {
+          if (!msg.id) continue;
+          await gmail.users.messages.trash({ userId: 'me', id: msg.id });
+          await supabase.from('cleanup_log').insert({
+            user_id: userId,
+            action_type: action,
+            thread_id: msg.threadId,
+            status: 'completed'
+          });
+        }
+
+        // Delete from Supabase
+        await supabase.from('emails').delete().eq('user_id', userId).in('message_id', messageIds);
       }
     } else if (action === 'bulk-delete') {
       const customQuery = job.data.customQuery;
@@ -105,15 +133,22 @@ export const processCleanup = async (job: Job) => {
       const res = await gmail.users.messages.list({ userId: 'me', q: customQuery, maxResults: 100 });
       const msgs = res.data.messages || [];
 
-      for (const msg of msgs) {
-        if (!msg.id) continue;
-        await gmail.users.messages.trash({ userId: 'me', id: msg.id });
-        await supabase.from('cleanup_log').insert({
-          user_id: userId,
-          action_type: 'bulk-delete',
-          thread_id: msg.threadId,
-          status: 'completed'
-        });
+      if (msgs.length > 0) {
+        const messageIds = msgs.map(m => m.id).filter(id => id != null) as string[];
+
+        for (const msg of msgs) {
+          if (!msg.id) continue;
+          await gmail.users.messages.trash({ userId: 'me', id: msg.id });
+          await supabase.from('cleanup_log').insert({
+            user_id: userId,
+            action_type: 'bulk-delete',
+            thread_id: msg.threadId,
+            status: 'completed'
+          });
+        }
+
+        // Delete from Supabase
+        await supabase.from('emails').delete().eq('user_id', userId).in('message_id', messageIds);
       }
     }
   } catch (error: unknown) {
