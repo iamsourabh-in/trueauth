@@ -3,10 +3,8 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getGmailClient } from '../config/google';
 import { supabase } from '../config/supabase';
 import { createLogger, requestLogMeta } from '../lib/logger';
-import { redis } from '../config/redis';
 
 const logger = createLogger('routes.subscriptions');
-const CACHE_TTL = 1800; // 30 minutes in seconds
 
 export const subscriptionsRouter = Router();
 

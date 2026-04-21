@@ -4,7 +4,6 @@ import { getGmailClient } from '../config/google';
 import { supabase } from '../config/supabase';
 import { createLogger, requestLogMeta } from '../lib/logger';
 import { identifyCategory, analyzeEmailWithAI } from '../services/email.analysis.service';
-import { redis } from '../config/redis';
 import { syncQueue } from '../config/bull';
 import { processHistoricalSync } from '../jobs/historical-sync.job';
 
@@ -224,16 +223,7 @@ mailboxRouter.get('/emails', requireAuth, async (req: AuthRequest, res) => {
 
     const hasFilters = !!search || !!categoriesStr;
 
-    // 1. If it's the first page and no filters, try Redis Cache first
-    if (page === 1 && !hasFilters) {
-      const { getCachedEmails } = await import('../services/email.storage.service');
-      const cached = await getCachedEmails(userId);
-      if (cached.length >= limit) {
-        return res.json({ emails: cached.slice(0, limit), page, hasMore: true });
-      }
-    }
-
-    // 2. Fetch from DB with pagination
+    // 1. Fetch from DB with pagination
     let query = supabase
       .from('emails')
       .select('*', { count: 'exact' })
@@ -517,10 +507,6 @@ mailboxRouter.delete('/messages/:id', requireAuth, async (req: AuthRequest, res)
 
     // 2. Remove from Supabase
     await supabase.from('emails').delete().eq('message_id', messageId).eq('user_id', userId);
-
-    // 3. Clear Redis cache for this user (safest way to ensure no ghost entries)
-    const redisKey = `recent_emails:${userId}`;
-    await redis.del(redisKey);
 
     res.json({ message: 'Success' });
   } catch (error: any) {
