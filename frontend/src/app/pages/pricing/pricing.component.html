@@ -7,7 +7,9 @@
   </div>
   <div style="display:flex;align-items:center;gap:.5rem;">
     <button class="nav-ghost" (click)="router.navigate(['/about'])">About</button>
+    <button class="nav-ghost" (click)="router.navigate(['/pricing'])">Pricing</button>
     <button class="nav-ghost" (click)="router.navigate(['/privacy'])">Privacy</button>
+    <button class="nav-ghost cta" (click)="router.navigate(['/login'])" style="background:var(--accent);color:white;border-radius:0.5rem;padding:0.4rem 0.8rem;font-weight:600;margin-left:0.5rem;border:none;cursor:pointer;">Sign in</button>
     <button class="theme-toggle" (click)="theme.toggle()">
       <lucide-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18"></lucide-icon>
     </button>
