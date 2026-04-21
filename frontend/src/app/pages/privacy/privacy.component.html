@@ -1,3 +1,4 @@
+<div class="gradient-bg"><div class="blob3"></div></div>
 <div class="page-bg min-h-screen">
       <nav class="site-nav">
         <button class="nav-logo" (click)="router.navigate(['/'])">TrueAuth</button>
@@ -13,13 +14,13 @@
       </nav>
 
       <main class="privacy-main">
-        <div class="privacy-header">
+        <div class="privacy-header anim-card">
           <div class="hero-badge">Legal</div>
           <h1 class="privacy-title">Privacy Policy</h1>
           <p class="privacy-meta">Last updated: April 2025</p>
         </div>
 
-        <div class="privacy-body">
+        <div class="privacy-body anim-card" style="animation-delay: 0.2s">
           <div class="policy-section" *ngFor="let s of sections">
             <h2>{{ s.title }}</h2>
             <p *ngFor="let p of s.paragraphs">{{ p }}</p>

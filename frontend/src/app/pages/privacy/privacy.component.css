@@ -1,5 +1,10 @@
-.page-bg { background: var(--bg); color: var(--text-primary); }
-    .site-nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 50; background: var(--nav-bg); }
+.page-bg { background: transparent; color: var(--text-primary); min-height: 100vh; position: relative; z-index: 1; }
+    .site-nav { 
+      display: flex; align-items: center; justify-content: space-between; 
+      padding: 0.9rem 2rem; border-bottom: 1px solid var(--border); 
+      backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 100; 
+      background: var(--nav-bg); 
+    }
     .nav-logo { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.03em; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; border: none; background-clip: text; }
     .nav-links { display: flex; align-items: center; gap: 0.5rem; }
     .nav-link { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0.5rem 0.75rem; border-radius: 0.5rem; font-size: 0.9rem; transition: all 0.2s; }

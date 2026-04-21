@@ -1,3 +1,4 @@
+<div class="gradient-bg"><div class="blob3"></div></div>
 <div class="page-bg min-h-screen">
       <nav class="site-nav">
         <button class="nav-logo" (click)="router.navigate(['/'])">TrueAuth</button>
@@ -13,13 +14,13 @@
       </nav>
 
       <main class="about-main">
-        <section class="about-hero">
+        <section class="about-hero anim-card">
           <div class="hero-badge">Our Mission</div>
           <h1 class="about-title">Email should <em>help</em> you,<br>not overwhelm you.</h1>
           <p class="about-subtitle">TrueAuth is an AI-native email manager built to help you reclaim your inbox. We combine cutting-edge LLMs with smart automation to keep your workflow clean, focused, and secure.</p>
         </section>
 
-        <section class="features-grid">
+        <section class="features-grid anim-card" style="animation-delay: 0.2s">
           <div class="feature-card" *ngFor="let f of features">
             <div class="feature-icon">{{ f.icon }}</div>
             <h3 class="feature-title">{{ f.title }}</h3>
@@ -27,7 +28,7 @@
           </div>
         </section>
 
-        <section class="mission-section">
+        <section class="mission-section anim-card" style="animation-delay: 0.4s">
           <div class="mission-card">
             <h2>Built on trust &amp; transparency</h2>
             <p>We believe your data belongs to <strong>you</strong>. TrueAuth only reads the emails you explicitly authorize. Your Google tokens are encrypted, never sold, and you can revoke access at any time from your Google account settings.</p>
