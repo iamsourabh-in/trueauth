@@ -30,7 +30,7 @@ export class LoginComponent implements OnDestroy {
 
   constructor() {
     this.sub = this.supabase.user.subscribe((user) => {
-      if (user) this.router.navigate(['/dashboard/inbox']);
+      if (user) this.router.navigate(['/dashboard/summary']);
     });
   }
 
