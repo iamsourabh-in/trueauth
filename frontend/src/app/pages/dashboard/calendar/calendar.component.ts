@@ -2,11 +2,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
 import { LucideAngularModule } from 'lucide-angular';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-calendar-page',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule, DatePipe],
+  imports: [CommonModule, LucideAngularModule, DatePipe, FormsModule],
   template: `
     <div class="calendar-page anim-fade-in">
       <div class="page-header">
@@ -14,9 +15,24 @@ import { LucideAngularModule } from 'lucide-angular';
           <h2 class="page-title">Monthly Schedule</h2>
           <p class="page-sub">Intelligent view of your upcoming events and commitments.</p>
         </div>
-        <div class="month-label">
-          <lucide-icon name="calendar" [size]="20"></lucide-icon>
-          <span>{{ now | date:'MMMM yyyy' }}</span>
+        <div class="header-actions">
+           <label class="toggle-checkbox">
+             <input type="checkbox" [(ngModel)]="showHolidays" (change)="generateGrid()">
+             <span>Show public holidays</span>
+           </label>
+           
+           <div class="month-controls">
+             <button class="icon-btn hollow" (click)="prevMonth()">
+               <lucide-icon name="chevron-left" [size]="18"></lucide-icon>
+             </button>
+             <div class="month-label">
+               <lucide-icon name="calendar" [size]="20"></lucide-icon>
+               <span>{{ currentMonthDate | date:'MMMM yyyy' }}</span>
+             </div>
+             <button class="icon-btn hollow" (click)="nextMonth()">
+               <lucide-icon name="chevron-right" [size]="18"></lucide-icon>
+             </button>
+           </div>
         </div>
       </div>
 
@@ -50,56 +66,32 @@ import { LucideAngularModule } from 'lucide-angular';
             </div>
          </div>
 
-         <!-- Right Column: Full Month List -->
+         <!-- Right Column: Full Month Grid -->
          <div class="main-column">
             <div class="month-container glass-card">
-               <div class="card-header">
-                  <h3 class="card-title">Coming up this month</h3>
+               
+               <div class="calendar-table-header">
+                  <span class="weekday" *ngFor="let day of weekDays">{{ day }}</span>
+               </div>
+               
+               <div class="calendar-table-body">
+                  <div class="day-cell" *ngFor="let cell of calendarGrid" [class.empty]="!cell.date" [class.today]="cell.isToday" [class.weekend]="cell.isWeekend">
+                     <div class="date-num" *ngIf="cell.date">{{ cell.dayNum }}</div>
+                     
+                     <div class="cell-events" *ngIf="cell.events.length > 0">
+                        <ng-container *ngFor="let ev of cell.events">
+                           <div class="cell-event-pill" *ngIf="shouldShowEvent(ev)" [title]="ev.summary">
+                              <span class="evt-time" *ngIf="ev.start?.dateTime">{{ ev.start.dateTime | date:'HH:mm' }}</span>
+                              <span class="evt-title">{{ ev.summary }}</span>
+                           </div>
+                        </ng-container>
+                     </div>
+                  </div>
                </div>
 
-               <div class="events-list">
-                  <div class="event-row" *ngFor="let ev of events; let i = index" [style.animation-delay]="i * 30 + 'ms'">
-                     <div class="date-box">
-                        <span class="day">{{ ev.start?.dateTime | date:'dd' }}</span>
-                        <span class="month">{{ ev.start?.dateTime | date:'MMM' }}</span>
-                     </div>
-                     
-                     <div class="event-info">
-                        <div class="title-row">
-                           <span class="title">{{ ev.summary }}</span>
-                           <span class="time-range">
-                              {{ ev.start?.dateTime | date:'h:mm a' }} - {{ ev.end?.dateTime | date:'h:mm a' }}
-                           </span>
-                        </div>
-                        <div class="meta-row">
-                           <span class="meta-tag" *ngIf="ev.creator?.email">
-                              <lucide-icon name="user" [size]="12"></lucide-icon>
-                              {{ ev.creator.email }}
-                           </span>
-                           <span class="meta-tag" *ngIf="ev.location">
-                              <lucide-icon name="map-pin" [size]="12"></lucide-icon>
-                              {{ ev.location }}
-                           </span>
-                        </div>
-                     </div>
-
-                     <div class="event-link">
-                        <a [href]="ev.htmlLink" target="_blank" title="View in Google Calendar">
-                           <lucide-icon name="external-link" [size]="16"></lucide-icon>
-                        </a>
-                     </div>
-                  </div>
-
-                  <div class="loading-state" *ngIf="loading">
-                     <div class="spinner"></div>
-                     <p>Fetching your schedule...</p>
-                  </div>
-
-                  <div class="empty-month" *ngIf="!loading && events.length === 0">
-                     <lucide-icon name="calendar-off" [size]="48" style="opacity: 0.1"></lucide-icon>
-                     <h3>Quiet month ahead</h3>
-                     <p>No events scheduled for the rest of this month.</p>
-                  </div>
+               <div class="loading-state" *ngIf="loading">
+                  <div class="spinner"></div>
+                  <p>Fetching your schedule...</p>
                </div>
             </div>
          </div>
@@ -112,13 +104,21 @@ import { LucideAngularModule } from 'lucide-angular';
     .page-title { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.25rem; }
     .page-sub { font-size: 0.9rem; color: var(--text-secondary); }
 
+    .header-actions { display: flex; align-items: center; gap: 1.5rem; }
+    
+    .toggle-checkbox { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+    
+    .month-controls { display: flex; align-items: center; gap: 0.5rem; }
     .month-label { 
-      display: flex; align-items: center; gap: 0.75rem; 
-      padding: 0.75rem 1.25rem; background: var(--accent); color: white;
-      border-radius: 1rem; font-weight: 700; box-shadow: var(--shadow-small);
+      display: flex; align-items: center; gap: 0.5rem; min-width: 170px; justify-content: center;
+      padding: 0.75rem 1rem; background: var(--accent); color: white;
+      border-radius: 0.75rem; font-weight: 700; box-shadow: var(--shadow-small); font-size: 0.9rem;
     }
+    
+    .icon-btn.hollow { background: var(--surface2); border: 1px solid var(--border); padding: 0.6rem; border-radius: 0.75rem; color: var(--text-secondary); cursor: pointer; transition: all 0.2s;}
+    .icon-btn.hollow:hover { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); }
 
-    .calendar-grid { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; align-items: start; }
+    .calendar-grid { display: grid; grid-template-columns: 280px 1fr; gap: 2rem; align-items: start; }
 
     .section-card { border-radius: 1.25rem; overflow: hidden; height: 100%; border: 1px solid var(--border); }
     .card-header { 
@@ -147,47 +147,43 @@ import { LucideAngularModule } from 'lucide-angular';
     .event-title { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
     .event-loc { font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem; }
 
-    /* Main Month List */
-    .month-container { height: 100%; border: 1px solid var(--border); border-radius: 1.25rem; display: flex; flex-direction: column; }
-    .events-list { flex: 1; overflow-y: auto; }
-    .event-row { 
-      display: flex; align-items: center; padding: 1.25rem 1.5rem; 
-      border-bottom: 1px solid var(--border); gap: 1.5rem; 
-      transition: all 0.2s; animation: slideIn 0.3s ease-both;
+    /* Grid Design */
+    .month-container { 
+      border: 1px solid var(--border); border-radius: 1.25rem; background: var(--surface);
+      display: flex; flex-direction: column; overflow: hidden;
     }
-    .event-row:hover { background: var(--surface2); }
-    .event-row:last-child { border-bottom: none; }
+    
+    .calendar-table-header { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--surface2); border-bottom: 1px solid var(--border); }
+    .weekday { text-align: center; padding: 1rem 0; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
 
-    .date-box { 
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      min-width: 54px; height: 54px; border-radius: 1rem; 
-      background: var(--surface2); border: 1px solid var(--border);
+    .calendar-table-body { display: grid; grid-template-columns: repeat(7, 1fr); border-left: 1px solid var(--border); }
+    .day-cell { 
+       min-height: 120px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+       padding: 0.5rem; position: relative; transition: background 0.1s;
+       display: flex; flex-direction: column; gap: 0.25rem;
     }
-    .date-box .day { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
-    .date-box .month { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .day-cell:hover:not(.empty) { background: var(--surface2); }
+    .day-cell.empty { background: rgba(0,0,0,0.01); pointer-events: none; }
+    .day-cell.weekend { background: rgba(0,0,0,0.015); }
+    .day-cell.today { background: var(--accent-subtle); }
+    .day-cell.today .date-num { background: var(--accent); color: white; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
 
-    .event-info { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
-    .title-row { display: flex; justify-content: space-between; align-items: flex-start; }
-    .title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
-    .time-range { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
-
-    .meta-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-    .meta-tag { 
-       display: flex; align-items: center; gap: 0.35rem; 
-       font-size: 0.75rem; color: var(--text-secondary); background: var(--surface2);
-       padding: 0.2rem 0.6rem; border-radius: 0.5rem;
+    .date-num { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); align-self: flex-end; margin-bottom: 0.25rem; }
+    
+    .cell-events { display: flex; flex-direction: column; gap: 0.2rem; overflow-y: auto; max-height: 80px; }
+    .cell-events::-webkit-scrollbar { width: 3px; }
+    
+    .cell-event-pill { 
+       background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); 
+       padding: 0.2rem 0.4rem; border-radius: 0.35rem; display: flex; gap: 0.3rem; align-items: center;
+       cursor: pointer;
     }
-
-    .event-link a { 
-      color: var(--text-muted); transition: color 0.2s; display: flex; padding: 0.5rem; border-radius: 0.5rem;
-    }
-    .event-link a:hover { color: var(--accent); background: var(--accent-subtle); }
+    .cell-event-pill:hover { background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.3); }
+    .evt-time { font-size: 0.65rem; font-weight: 700; color: #4f46e5; flex-shrink: 0; }
+    .evt-title { font-size: 0.7rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .loading-state { padding: 4rem; text-align: center; color: var(--text-muted); }
     .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
-
-    .empty-month { padding: 5rem 2rem; text-align: center; color: var(--text-muted); }
-    .empty-month h3 { margin: 1rem 0 0.5rem; color: var(--text-primary); }
 
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
@@ -200,14 +196,21 @@ import { LucideAngularModule } from 'lucide-angular';
 export class CalendarPageComponent implements OnInit {
   api = inject(ApiService);
   now = new Date();
+  currentMonthDate = new Date();
+  
   events: any[] = [];
   eventsToday: any[] = [];
   loading = true;
+
+  weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  calendarGrid: any[] = [];
+  showHolidays = true;
 
   async ngOnInit() {
     try {
       this.events = await this.api.getCalendarEvents();
       this.filterToday();
+      this.generateGrid();
     } catch (err) {
       console.error('Failed to load events', err);
     } finally {
@@ -215,17 +218,77 @@ export class CalendarPageComponent implements OnInit {
     }
   }
 
+  generateGrid() {
+    const year = this.currentMonthDate.getFullYear();
+    const month = this.currentMonthDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    this.calendarGrid = [];
+    
+    // Pad
+    for (let i = 0; i < firstDay; i++) {
+       this.calendarGrid.push({ date: null, events: [] });
+    }
+    
+    const todayStr = this.now.toDateString();
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+       const d = new Date(year, month, i);
+       const dStr = d.toDateString();
+       const dayOfWeek = d.getDay();
+       
+       // Correct local timezone ISO extraction matching Google's date strings
+       const tzOffset = d.getTimezoneOffset() * 60000;
+       const localISOTime = (new Date(d.getTime() - tzOffset)).toISOString().split('T')[0];
+       
+       const dayEvents = this.events.filter(ev => {
+          const start = ev.start?.dateTime || ev.start?.date;
+          return start?.startsWith(localISOTime);
+       });
+       
+       this.calendarGrid.push({
+          date: d,
+          dayNum: i,
+          events: dayEvents,
+          isToday: dStr === todayStr,
+          isWeekend: dayOfWeek === 0 || dayOfWeek === 6
+       });
+    }
+  }
+
+  prevMonth() {
+    this.currentMonthDate.setMonth(this.currentMonthDate.getMonth() - 1);
+    this.generateGrid();
+  }
+
+  nextMonth() {
+    this.currentMonthDate.setMonth(this.currentMonthDate.getMonth() + 1);
+    this.generateGrid();
+  }
+
+  shouldShowEvent(ev: any): boolean {
+    if (!this.showHolidays && (ev.summary?.toLowerCase().includes('holiday') || ev.eventType === 'holiday')) {
+       return false;
+    }
+    return true;
+  }
+
   filterToday() {
-    const todayStr = this.now.toISOString().split('T')[0];
+    const tzOffset = this.now.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(this.now.getTime() - tzOffset)).toISOString().split('T')[0];
+    
     this.eventsToday = this.events.filter(ev => {
        const start = ev.start?.dateTime || ev.start?.date;
-       return start?.startsWith(todayStr);
+       return start?.startsWith(localISOTime);
     });
   }
 
   isCurrentlyRunning(ev: any): boolean {
-    const start = new Date(ev.start?.dateTime).getTime();
-    const end = new Date(ev.end?.dateTime).getTime();
+    if (!ev.start?.dateTime || !ev.end?.dateTime) return false;
+    const start = new Date(ev.start.dateTime).getTime();
+    const end = new Date(ev.end.dateTime).getTime();
     const nowTime = this.now.getTime();
     return nowTime >= start && nowTime <= end;
   }

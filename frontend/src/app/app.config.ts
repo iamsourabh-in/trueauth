@@ -1,7 +1,7 @@
 import { ApplicationConfig, importProvidersFrom, isDevMode } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch } from '@angular/common/http';
-import { LucideAngularModule, Inbox, Bell, Trash2, PenBox, Calendar, LogOut, Moon, Sun, ChevronRight, ChevronLeft, RefreshCw, CheckCircle, ShieldAlert, AlertCircle, Mail, Sparkles, Check, Layout, MoreVertical, Menu, X, UserX, ClipboardCheck, Star, Play, PenTool, Database, Pause, Quote, ArrowLeft, Archive, Reply, Forward, User, ExternalLink, ShieldCheck, GlobeLock, Users, PhoneCall, ShieldOff, Search, Filter } from 'lucide-angular';
+import { LucideAngularModule, Inbox, Bell, Trash2, PenBox, Calendar, LogOut, Moon, Sun, ChevronRight, ChevronLeft, RefreshCw, CheckCircle, ShieldAlert, AlertCircle, Mail, Sparkles, Check, Layout, MoreVertical, Menu, X, UserX, ClipboardCheck, Star, Play, PenTool, Database, Pause, Quote, ArrowLeft, Archive, Reply, Forward, User, ExternalLink, ShieldCheck, GlobeLock, Users, PhoneCall, ShieldOff, Search, Filter, MapPin, CalendarOff } from 'lucide-angular';
 
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -10,10 +10,10 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideHttpClient(withFetch()),
-    importProvidersFrom(LucideAngularModule.pick({ Inbox, Bell, Trash2, PenBox, Calendar, LogOut, Moon, Sun, ChevronRight, ChevronLeft, RefreshCw, CheckCircle, ShieldAlert, AlertCircle, Mail, Sparkles, Check, Layout, MoreVertical, Menu, X, UserX, ClipboardCheck, Star, Play, PenTool, Database, Pause, Quote, ArrowLeft, Archive, Reply, Forward, User, ExternalLink, ShieldCheck, GlobeLock, Users, PhoneCall, ShieldOff, Search, Filter })),
+    importProvidersFrom(LucideAngularModule.pick({ Inbox, Bell, Trash2, PenBox, Calendar, LogOut, Moon, Sun, ChevronRight, ChevronLeft, RefreshCw, CheckCircle, ShieldAlert, AlertCircle, Mail, Sparkles, Check, Layout, MoreVertical, Menu, X, UserX, ClipboardCheck, Star, Play, PenTool, Database, Pause, Quote, ArrowLeft, Archive, Reply, Forward, User, ExternalLink, ShieldCheck, GlobeLock, Users, PhoneCall, ShieldOff, Search, Filter, MapPin, CalendarOff })),
     provideServiceWorker('ngsw-worker.js', {
-        enabled: !isDevMode(),
-        registrationStrategy: 'registerWhenStable:30000'
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
     })
-]
+  ]
 };
