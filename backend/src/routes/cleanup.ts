@@ -41,10 +41,10 @@ export const cleanupRouter = Router();
 cleanupRouter.post('/trigger', requireAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.id;
-    const { action } = req.body; // e.g. 'archive-promotions' or 'delete-otps'
+    const { action, customQuery } = req.body; // e.g. 'archive-promotions' or 'bulk-delete'
 
     if (!userId) return res.status(401).json({ error: 'User not found' });
-    if (!['archive-promotions', 'delete-otps', 'clear-junk', 'delete-spam'].includes(action)) {
+    if (!['archive-promotions', 'delete-otps', 'clear-junk', 'delete-spam', 'bulk-delete'].includes(action)) {
         return res.status(400).json({ error: 'Invalid action type' });
     }
 
@@ -57,6 +57,7 @@ cleanupRouter.post('/trigger', requireAuth, async (req: AuthRequest, res) => {
     await cleanupQueue.add({
         userId,
         action,
+        customQuery,
         tokens: tokenData
     }, {
         removeOnComplete: true

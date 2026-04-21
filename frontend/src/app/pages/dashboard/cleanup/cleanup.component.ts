@@ -41,6 +41,31 @@ interface Rule { id: string; label: string; desc: string; action: string; icon: 
         </div>
       </div>
 
+      <!-- Bulk Delete -->
+      <div class="bulk-delete-section">
+        <div class="rule-card bulk-card">
+          <div class="rule-icon" style="background: linear-gradient(135deg, #ec4899, #f43f5e)">
+             <lucide-icon name="trash-2" [size]="20" color="white"></lucide-icon>
+          </div>
+          <div class="rule-body">
+            <h3 class="rule-name">Custom Bulk Delete</h3>
+            <p class="rule-desc">Permanently remove all emails matching a specific Gmail search query.</p>
+            <div class="bulk-input-row">
+               <input type="text" placeholder="e.g. from:spam@example.com or older_than:30d" class="form-input" [value]="bulkQuery" (input)="onBulkInput($event)">
+               <button 
+                 class="run-btn danger" 
+                 [class.running]="running === 'bulk-delete'"
+                 [disabled]="!bulkQuery || running !== null"
+                 (click)="runBulk()"
+               >
+                 <span *ngIf="running === 'bulk-delete'" class="mini-spinner"></span>
+                 <span *ngIf="running !== 'bulk-delete'">Run Delete</span>
+               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Log -->
       <div class="log-section" *ngIf="log.length > 0">
         <h3 class="log-title">Activity log</h3>
@@ -70,6 +95,13 @@ interface Rule { id: string; label: string; desc: string; action: string; icon: 
     .run-btn:hover:not(:disabled) { background: var(--accent); color: white; border-color: var(--accent); }
     .run-btn:disabled { opacity: 0.5; pointer-events: none; }
     .run-btn.done { background: rgba(34,197,94,0.1); color: var(--success); border-color: rgba(34,197,94,0.2); }
+    .run-btn.danger { background: var(--danger); color: white; border-color: var(--danger); opacity: 0.9; }
+    .run-btn.danger:hover:not(:disabled) { opacity: 1; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2); }
+    .bulk-delete-section { margin-top: 1.5rem; }
+    .bulk-card { background: var(--surface2); }
+    .bulk-input-row { display: flex; gap: 0.75rem; margin-top: 0.75rem; align-items: stretch; }
+    .form-input { flex: 1; padding: 0.6rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font-size: 0.85rem; transition: all 0.2s; }
+    .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle); }
     .mini-spinner { width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .log-section { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 1.25rem; }
@@ -89,6 +121,12 @@ export class CleanupPageComponent {
   running: string | null = null;
   done = new Set<string>();
   log: { time: Date; msg: string; ok: boolean }[] = [];
+  bulkQuery = '';
+
+  onBulkInput(event: Event) {
+    this.bulkQuery = (event.target as HTMLInputElement).value;
+  }
+
 
   rules: Rule[] = [
     {
@@ -121,6 +159,20 @@ export class CleanupPageComponent {
       this.log.unshift({ time: new Date(), msg: `"${r.label}" job queued successfully.`, ok: true });
     } catch {
       this.log.unshift({ time: new Date(), msg: `"${r.label}" failed to queue. Check API connection.`, ok: false });
+    } finally {
+      this.running = null;
+    }
+  }
+
+  async runBulk() {
+    if (!this.bulkQuery) return;
+    this.running = 'bulk-delete';
+    try {
+      await this.api.triggerCleanup('bulk-delete', this.bulkQuery);
+      this.done.add('bulk-delete');
+      this.log.unshift({ time: new Date(), msg: `Queued bulk delete for query: "${this.bulkQuery}"`, ok: true });
+    } catch {
+      this.log.unshift({ time: new Date(), msg: `Bulk delete failed to queue.`, ok: false });
     } finally {
       this.running = null;
     }

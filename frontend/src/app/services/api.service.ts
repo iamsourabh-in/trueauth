@@ -50,9 +50,9 @@ export class ApiService {
     return firstValueFrom(this.http.post<any>(`${this.baseUrl}/subscriptions/unsubscribe`, { id }, { headers }));
   }
 
-  async triggerCleanup(action: string) {
+  async triggerCleanup(action: string, customQuery?: string) {
     const headers = await this.getHeaders();
-    return firstValueFrom(this.http.post<any>(`${this.baseUrl}/cleanup/trigger`, { action }, { headers }));
+    return firstValueFrom(this.http.post<any>(`${this.baseUrl}/cleanup/trigger`, { action, customQuery }, { headers }));
   }
 
   async generateDraft(threadId: string) {

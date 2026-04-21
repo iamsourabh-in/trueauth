@@ -98,6 +98,23 @@ export const processCleanup = async (job: Job) => {
           status: 'completed'
         });
       }
+    } else if (action === 'bulk-delete') {
+      const customQuery = job.data.customQuery;
+      if (!customQuery) throw new Error('Query required for bulk delete');
+
+      const res = await gmail.users.messages.list({ userId: 'me', q: customQuery, maxResults: 100 });
+      const msgs = res.data.messages || [];
+
+      for (const msg of msgs) {
+        if (!msg.id) continue;
+        await gmail.users.messages.trash({ userId: 'me', id: msg.id });
+        await supabase.from('cleanup_log').insert({
+          user_id: userId,
+          action_type: 'bulk-delete',
+          thread_id: msg.threadId,
+          status: 'completed'
+        });
+      }
     }
   } catch (error: unknown) {
     logger.error('Cleanup job failed', {
