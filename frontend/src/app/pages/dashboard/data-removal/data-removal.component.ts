@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
+import { ApiService } from '../../../services/api.service';
 
 @Component({
   selector: 'app-data-removal',
@@ -13,9 +14,9 @@ import { LucideAngularModule } from 'lucide-angular';
           <h2 class="page-title">Personal Data Removal</h2>
           <p class="page-sub">Scrub your digital footprint from data brokers and public databases.</p>
         </div>
-        <button class="btn-primary">
-          <lucide-icon name="shield-check" [size]="15" color="white"></lucide-icon>
-          Start Scan
+        <button class="btn-primary" (click)="triggerScan()" [disabled]="syncing">
+          <lucide-icon name="shield-check" [size]="15" color="white" [class.spin]="syncing"></lucide-icon>
+          {{ syncing ? 'Processing...' : 'Start Scan & Remove' }}
         </button>
       </div>
 
@@ -33,11 +34,13 @@ import { LucideAngularModule } from 'lucide-angular';
             </div>
             <div class="card-body">
               <div class="brokers-list">
-                <span class="broker-chip" *ngFor="let broker of brokers">
-                  {{ broker }}
-                  <lucide-icon name="check-circle" [size]="14" class="success-icon"></lucide-icon>
+                <span class="broker-chip" *ngFor="let broker of brokers" [ngClass]="broker.status">
+                  {{ broker.name }}
+                  <lucide-icon *ngIf="broker.status === 'completed'" name="check-circle" [size]="14" class="success-icon"></lucide-icon>
+                  <lucide-icon *ngIf="broker.status === 'sent'" name="check" [size]="14" class="pending-icon"></lucide-icon>
+                  <span *ngIf="broker.status === 'pending'" class="mini-spinner"></span>
                 </span>
-                <span class="broker-chip pending">+42 more</span>
+                <span class="broker-chip pending-chip" *ngIf="brokers.length === 0">Loading brokers...</span>
               </div>
             </div>
           </div>
@@ -55,27 +58,39 @@ import { LucideAngularModule } from 'lucide-angular';
               <div class="detail-group">
                 <label>Emails</label>
                 <div class="detail-inputs">
-                  <input type="email" placeholder="example&#64;trueauth.app" class="form-input">
-                  <button class="btn-outline">Add</button>
+                  <input #emailInp type="email" placeholder="example&#64;trueauth.app" class="form-input">
+                  <button class="btn-outline" (click)="addIdentity('email', emailInp.value); emailInp.value=''">Add</button>
                 </div>
                 <div class="tags-container">
-                  <span class="tag">primary&#64;email.com <lucide-icon name="x" [size]="12"></lucide-icon></span>
+                  <ng-container *ngFor="let iden of identities">
+                    <span class="tag" *ngIf="iden.type === 'email'">{{ iden.value }}</span>
+                  </ng-container>
                 </div>
               </div>
 
               <div class="detail-group">
                 <label>Phone Numbers</label>
                 <div class="detail-inputs">
-                  <input type="tel" placeholder="(555) 555-5555" class="form-input">
-                  <button class="btn-outline">Add</button>
+                  <input #phoneInp type="tel" placeholder="(555) 555-5555" class="form-input">
+                  <button class="btn-outline" (click)="addIdentity('phone', phoneInp.value); phoneInp.value=''">Add</button>
+                </div>
+                <div class="tags-container">
+                  <ng-container *ngFor="let iden of identities">
+                    <span class="tag info" *ngIf="iden.type === 'phone'">{{ iden.value }}</span>
+                  </ng-container>
                 </div>
               </div>
 
               <div class="detail-group">
                 <label>Addresses</label>
                 <div class="detail-inputs">
-                  <input type="text" placeholder="123 Privacy Ln..." class="form-input">
-                  <button class="btn-outline">Add</button>
+                  <input #addrInp type="text" placeholder="123 Privacy Ln..." class="form-input">
+                  <button class="btn-outline" (click)="addIdentity('address', addrInp.value); addrInp.value=''">Add</button>
+                </div>
+                <div class="tags-container">
+                  <ng-container *ngFor="let iden of identities">
+                     <span class="tag addr" *ngIf="iden.type === 'address'">{{ iden.value }}</span>
+                  </ng-container>
                 </div>
               </div>
             </div>
@@ -164,7 +179,14 @@ import { LucideAngularModule } from 'lucide-angular';
       display: inline-flex; align-items: center; gap: 0.4rem;
     }
     .success-icon { color: var(--success); }
-    .broker-chip.pending { border: 1px dashed var(--text-muted); background: transparent; color: var(--text-secondary); cursor: pointer; }
+    .broker-chip.sent { border: 1px solid var(--accent); color: var(--accent); background: var(--accent-subtle); }
+    .broker-chip.completed { background: rgba(34,197,94,0.1); color: var(--success); }
+    .pending-icon { color: var(--accent); }
+    .broker-chip.pending-chip { border: 1px dashed var(--text-muted); background: transparent; color: var(--text-secondary); cursor: default; }
+
+    .spin { animation: spin 1s linear infinite; }
+    .mini-spinner { width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .details-section { display: flex; flex-direction: column; gap: 1.25rem; }
     .detail-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; }
@@ -174,9 +196,10 @@ import { LucideAngularModule } from 'lucide-angular';
     .btn-outline { padding: 0 1rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--surface2); color: var(--text-primary); font-weight: 600; cursor: pointer; transition: all 0.2s;}
     .btn-outline:hover { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); }
     
-    .tags-container { display: flex; gap: 0.5rem; }
-    .tag { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.6rem; background: var(--accent-subtle); color: var(--accent); border-radius: 6px; font-size: 0.8rem; font-weight: 600;}
-    .tag lucide-icon { cursor: pointer; }
+    .tags-container { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .tag { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.6rem; background: var(--surface2); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; font-size: 0.8rem; font-weight: 600;}
+    .tag.info { background: rgba(56, 189, 248, 0.1); color: #0284c7; border-color: rgba(56, 189, 248, 0.2); }
+    .tag.addr { background: rgba(168, 85, 247, 0.1); color: #9333ea; border-color: rgba(168, 85, 247, 0.2); }
 
     .settings-list { display: flex; flex-direction: column; gap: 1.25rem; }
     .setting-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
@@ -212,6 +235,40 @@ import { LucideAngularModule } from 'lucide-angular';
     .support-tel { display: inline-block; font-size: 1.25rem; font-weight: 900; color: white; text-decoration: none; }
   `]
 })
-export class DataRemovalComponent {
-  brokers = ['Whitepages', 'Spokeo', 'BeenVerified', 'Intelius', 'MyLife', 'TruthFinder', 'Radaris'];
+export class DataRemovalComponent implements OnInit {
+  api = inject(ApiService);
+  brokers: any[] = [];
+  identities: any[] = [];
+  syncing = false;
+
+  async ngOnInit() {
+    await this.loadStatus();
+  }
+
+  async loadStatus() {
+    try {
+      const res = await this.api.getRemovalStatus();
+      this.brokers = res.statuses || [];
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async addIdentity(type: 'email'|'phone'|'address', value: string) {
+    if (!value) return;
+    try {
+       await this.api.saveIdentity(type, value);
+       this.identities.push({ type, value });
+    } catch {}
+  }
+
+  async triggerScan() {
+    this.syncing = true;
+    try {
+       await this.api.triggerRemoval();
+       // Wait a moment for queue to process initial steps, then reload
+       setTimeout(() => this.loadStatus(), 2000);
+    } catch {} 
+    finally { this.syncing = false; }
+  }
 }

@@ -55,6 +55,22 @@ export class ApiService {
     return firstValueFrom(this.http.post<any>(`${this.baseUrl}/cleanup/trigger`, { action, customQuery }, { headers }));
   }
 
+  // Data Removal API Methods
+  async getRemovalStatus() {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.get<any>(`${this.baseUrl}/removal/status`, { headers }));
+  }
+
+  async saveIdentity(type: 'email' | 'phone' | 'address', value: string) {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.post<any>(`${this.baseUrl}/removal/identity`, { type, value }, { headers }));
+  }
+
+  async triggerRemoval() {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.post<any>(`${this.baseUrl}/removal/trigger`, {}, { headers }));
+  }
+
   async generateDraft(threadId: string) {
     const headers = await this.getHeaders();
     return firstValueFrom(this.http.post<any>(`${this.baseUrl}/draft/reply`, { threadId }, { headers }));

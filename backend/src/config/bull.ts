@@ -14,6 +14,7 @@ const queueOptions = REDIS_URL.startsWith('rediss://')
 
 export const cleanupQueue = new Queue('cleanup', REDIS_URL, queueOptions);
 export const syncQueue = new Queue('sync', REDIS_URL, queueOptions);
+export const removalQueue = new Queue('removal', REDIS_URL, queueOptions);
 
 cleanupQueue.on('error', (err: Error) => {
   logger.error('Bull queue connection error', { queue: 'cleanup', message: err.message, stack: err.stack });
