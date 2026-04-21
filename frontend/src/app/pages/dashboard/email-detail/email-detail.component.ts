@@ -59,7 +59,7 @@ import { LucideAngularModule } from 'lucide-angular';
         </div>
 
         <div class="body-container">
-          <pre class="body-text">{{ email.body }}</pre>
+          <div class="body-text" [innerHTML]="email.body"></div>
         </div>
 
         <!-- Footer -->
@@ -144,7 +144,7 @@ import { LucideAngularModule } from 'lucide-angular';
 
     .body-container { margin-bottom: 2.5rem; min-height: 200px; }
     .body-text {
-      white-space: pre-wrap; font-family: inherit; font-size: 0.95rem;
+      font-family: inherit; font-size: 0.95rem;
       line-height: 1.7; color: var(--text-primary);
     }
 
