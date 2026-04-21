@@ -126,6 +126,11 @@ export class ApiService {
     return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/categories`, { headers }));
   }
 
+  async getEmailSenders() {
+    const headers = await this.getHeaders();
+    return firstValueFrom(this.http.get<any>(`${this.baseUrl}/mailbox/senders`, { headers }));
+  }
+
   async getEmails(page: number = 1, limit: number = 50, search: string = '', categories: string[] = []) {
     const headers = await this.getHeaders();
     let url = `${this.baseUrl}/mailbox/emails?page=${page}&limit=${limit}`;

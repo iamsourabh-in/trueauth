@@ -294,6 +294,37 @@ mailboxRouter.get('/categories', requireAuth, async (req: AuthRequest, res) => {
 });
 
 /**
+ * Get distinct senders for the user (for auto-suggest)
+ */
+mailboxRouter.get('/senders', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'User not found' });
+    
+    // Select distinct senders
+    const { data, error } = await supabase
+      .from('emails')
+      .select('sender')
+      .eq('user_id', userId)
+      .neq('sender', null);
+      
+    if (error) throw error;
+    
+    // Parse pure emails from 'Name <email@domain>' bounds
+    let uniqueSenders = [...new Set(data.map(d => {
+        const match = d.sender.match(/<([^>]+)>/);
+        return match ? match[1] : d.sender;
+    }))].filter(Boolean);
+    
+    res.json({ senders: uniqueSenders });
+  } catch (error: any) {
+    logger.error('Get senders error', { error: error.message });
+    res.status(500).json({ error: 'Failed to fetch senders' });
+  }
+});
+
+
+/**
  * Get full email details including body
  */
 mailboxRouter.get('/messages/:id', requireAuth, async (req: AuthRequest, res) => {

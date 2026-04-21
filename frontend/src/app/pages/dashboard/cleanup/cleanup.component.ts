@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
 import { LucideAngularModule } from 'lucide-angular';
@@ -51,7 +51,10 @@ interface Rule { id: string; label: string; desc: string; action: string; icon: 
             <h3 class="rule-name">Custom Bulk Delete</h3>
             <p class="rule-desc">Permanently remove all emails matching a specific Gmail search query.</p>
             <div class="bulk-input-row">
-               <input type="text" placeholder="e.g. from:spam@example.com or older_than:30d" class="form-input" [value]="bulkQuery" (input)="onBulkInput($event)">
+               <input type="text" list="bulkSenders" placeholder="e.g. from:spam@example.com or older_than:30d" class="form-input" [value]="bulkQuery" (input)="onBulkInput($event)">
+               <datalist id="bulkSenders">
+                  <option *ngFor="let s of senders" [value]="'from:' + s">{{ s }}</option>
+               </datalist>
                <button 
                  class="run-btn danger" 
                  [class.running]="running === 'bulk-delete'"
@@ -61,6 +64,13 @@ interface Rule { id: string; label: string; desc: string; action: string; icon: 
                  <span *ngIf="running === 'bulk-delete'" class="mini-spinner"></span>
                  <span *ngIf="running !== 'bulk-delete'">Run Delete</span>
                </button>
+            </div>
+            <div class="template-chips">
+               <span class="t-chip" (click)="setBulkQuery('older_than:30d')">older_than:30d</span>
+               <span class="t-chip" (click)="setBulkQuery('older_than:1y')">older_than:1y</span>
+               <span class="t-chip" (click)="setBulkQuery('is:unread')">is:unread</span>
+               <span class="t-chip" (click)="setBulkQuery('has:attachment')">has:attachment</span>
+               <span class="t-chip" (click)="setBulkQuery('category:promotions')">category:promotions</span>
             </div>
           </div>
         </div>
@@ -100,6 +110,9 @@ interface Rule { id: string; label: string; desc: string; action: string; icon: 
     .bulk-delete-section { margin-top: 1.5rem; }
     .bulk-card { background: var(--surface2); }
     .bulk-input-row { display: flex; gap: 0.75rem; margin-top: 0.75rem; align-items: stretch; }
+    .template-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .t-chip { font-size: 0.75rem; background: var(--surface); border: 1px solid var(--border); padding: 0.25rem 0.6rem; border-radius: 1rem; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+    .t-chip:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-subtle); }
     .form-input { flex: 1; padding: 0.6rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font-size: 0.85rem; transition: all 0.2s; }
     .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle); }
     .mini-spinner { width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
@@ -116,12 +129,26 @@ interface Rule { id: string; label: string; desc: string; action: string; icon: 
     .log-msg { color: var(--text-secondary); }
   `]
 })
-export class CleanupPageComponent {
+export class CleanupPageComponent implements OnInit {
   api = inject(ApiService);
   running: string | null = null;
   done = new Set<string>();
   log: { time: Date; msg: string; ok: boolean }[] = [];
   bulkQuery = '';
+  senders: string[] = [];
+
+  async ngOnInit() {
+    try {
+      const res = await this.api.getEmailSenders();
+      this.senders = res.senders || [];
+    } catch (e) {
+      console.error('Failed to load senders for autocomplete', e);
+    }
+  }
+
+  setBulkQuery(query: string) {
+    this.bulkQuery = query;
+  }
 
   onBulkInput(event: Event) {
     this.bulkQuery = (event.target as HTMLInputElement).value;
